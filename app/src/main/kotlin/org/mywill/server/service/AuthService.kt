@@ -1,13 +1,19 @@
 package org.mywill.server.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.mywill.server.config.JwtUtils
 import org.mywill.server.domain.entity.User
 import org.mywill.server.domain.repository.UserRepository
 import org.mywill.server.restaccess.dto.AuthRequest
 import org.mywill.server.restaccess.dto.AuthResponse
 import org.mywill.server.restaccess.dto.VerifyRequest
+import jakarta.servlet.http.HttpSession
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import java.util.*
 import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
@@ -16,7 +22,9 @@ private val logger = KotlinLogging.logger {}
 class AuthService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
-    private val emailService: EmailService
+    private val emailService: EmailService,
+    private val httpSession: HttpSession,
+    private val jwtUtils: JwtUtils
 ) {
     fun register(request: AuthRequest): AuthResponse {
         if (userRepository.findByEmail(request.email) != null) {
@@ -72,7 +80,16 @@ class AuthService(
         }
         
         if (passwordEncoder.matches(request.password, user.password)) {
-            return AuthResponse(true, "Login successful")
+            val authentication = UsernamePasswordAuthenticationToken(user.email, null, emptyList())
+            val securityContext = SecurityContextHolder.createEmptyContext()
+            securityContext.authentication = authentication
+            SecurityContextHolder.setContext(securityContext)
+            
+            httpSession.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, securityContext)
+            
+            val token = jwtUtils.generateToken(user.email)
+            logger.info { "User ${user.email} authenticated. Session ID: ${httpSession.id}. Token generated." }
+            return AuthResponse(true, "Login successful", token)
         }
         return AuthResponse(false, "Invalid email or password")
     }

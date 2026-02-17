@@ -17,8 +17,9 @@ class BotApplication {
         return object : WebMvcConfigurer {
             override fun addCorsMappings(registry: CorsRegistry) {
                 registry.addMapping("/**")
-                    .allowedOrigins("*")
+                    .allowedOrigins("http://localhost:8081")
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                    .allowCredentials(true)
             }
         }
     }

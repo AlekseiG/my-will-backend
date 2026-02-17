@@ -22,6 +22,9 @@ class AuthController(private val authService: AuthService) {
 
     @PostMapping("/login")
     fun login(@RequestBody request: AuthRequest): AuthResponse {
-        return authService.login(request)
+        println("[DEBUG_LOG] Login request received for email: ${request.email}")
+        val response = authService.login(request)
+        println("[DEBUG_LOG] Login response: $response")
+        return response
     }
 }

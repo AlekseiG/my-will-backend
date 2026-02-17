@@ -7,7 +7,8 @@ data class AuthRequest(
 
 data class AuthResponse(
     val success: Boolean = false,
-    val message: String = ""
+    val message: String = "",
+    val token: String? = null
 )
 
 data class VerifyRequest(

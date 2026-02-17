@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: junie
+      changes:
+        - createTable:
+            tableName: wills
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: owner_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_will_owner
+                    referencedTableName: users
+                    referencedColumnNames: id
+              - column:
+                  name: content
+                  type: TEXT
+                  constraints:
+                    nullable: false
+        - createTable:
+            tableName: will_access_emails
+            columns:
+              - column:
+                  name: will_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_will_access_will
+                    referencedTableName: wills
+                    referencedColumnNames: id
+              - column:
+                  name: email
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
