@@ -13,7 +13,13 @@ kotlin {
         }
     }
     js(IR) {
-        browser()
+        browser {
+            commonWebpackConfig {
+                cssSupport {
+                    enabled = true
+                }
+            }
+        }
         binaries.executable()
     }
     

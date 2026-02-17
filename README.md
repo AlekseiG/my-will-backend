@@ -18,9 +18,9 @@
 ```
 (Требуется наличие работающего сервера на порту 8080)
 
-### Сборка JS клиента
+### Сборка и запуск JS клиента
 Для сборки JS версии:
 ```bash
 ./gradlew :client:jsBrowserProductionWebpack
 ```
-Результат будет в `client/build/dist/js/productionExecutable`.
+Результат будет в `client/build/dist/js/productionExecutable`. Чтобы увидеть интерфейс, откройте `index.html` в этом каталоге в браузере (убедитесь, что сервер запущен).
