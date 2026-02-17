@@ -24,31 +24,32 @@ fun main() {
     
     println("[DEBUG_LOG] Client JS starting at ${window.location.href}")
     
-    val apiClient: ApiClient? = try {
-        println("[DEBUG_LOG] Initializing ApiClient...")
+    val controller: AppController? = try {
+        println("[DEBUG_LOG] Initializing AppController...")
         val client = ApiClient()
-        println("[DEBUG_LOG] ApiClient initialized successfully")
-        client
+        val ctrl = AppController(client)
+        println("[DEBUG_LOG] AppController initialized successfully")
+        ctrl
     } catch (e: Throwable) {
-        println("[ERROR_LOG] ApiClient initialization FATAL ERROR: ${e.message}")
+        println("[ERROR_LOG] AppController initialization FATAL ERROR: ${e.message}")
         null
     }
     
-    if (apiClient == null) {
-        println("[ERROR_LOG] Cannot continue without ApiClient")
+    if (controller == null) {
+        println("[ERROR_LOG] Cannot continue without AppController")
         return
     }
 
     try {
-        // Состояние приложения
-        val appState = AppState()
+        // Состояние приложения (UI-специфичное)
+        val uiState = UiState()
 
         // Создание элементов интерфейса
         val ui = createUI()
         document.getElementById("root")?.appendChild(ui.container)
 
         // Инициализация обработчиков событий
-        setupEventHandlers(ui, apiClient, appState)
+        setupEventHandlers(ui, controller, uiState)
 
         // Проверка наличия токена в URL (после редиректа OAuth2)
         val hash = window.location.hash
@@ -56,7 +57,7 @@ fun main() {
             val token = hash.substringAfter("#token=")
             if (token.isNotEmpty()) {
                 println("[DEBUG_LOG] Token found in URL hash, logging in...")
-                apiClient.setToken(token)
+                controller.setToken(token)
                 window.location.hash = "" // Очищаем hash
                 GlobalScope.launch {
                     // Переключаемся на список завещаний
@@ -88,7 +89,7 @@ fun showStatus(ui: AppUI, message: String, isError: Boolean = false) {
 /**
  * Хранит текущее состояние интерфейса и выбранные данные.
  */
-class AppState {
+class UiState {
     var currentWillId: Long? = null
     var isSharedMode = false
 }
@@ -269,7 +270,7 @@ private fun createNavItem(text: String, icon: String, parent: HTMLDivElement): H
  * Настраивает логику переключения экранов и обработчики кликов.
  */
 @OptIn(DelicateCoroutinesApi::class)
-fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
+fun setupEventHandlers(ui: AppUI, controller: AppController, uiState: UiState) {
     
     fun updateNavSelection(selected: HTMLDivElement) {
         listOf(ui.myWillsBtn, ui.sharedWillsBtn, ui.createWillNavBtn).forEach {
@@ -289,9 +290,9 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     suspend fun loadMyWills() {
         showSection("list")
         updateNavSelection(ui.myWillsBtn)
-        state.isSharedMode = false
+        uiState.isSharedMode = false
         ui.listDiv.innerHTML = "<h2>Мои завещания</h2>"
-        val wills = apiClient.getMyWills()
+        val wills = controller.loadMyWills()
         if (wills.isEmpty()) {
             ui.listDiv.innerHTML += "<p style='color: var(--on-surface-variant)'>У вас еще нет завещаний.</p>"
         } else {
@@ -301,7 +302,7 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
                 item.innerHTML = "<h3>${will.title}</h3><p>${will.content.take(50)}${if(will.content.length > 50) "..." else ""}</p>"
                 item.onclick = {
                     GlobalScope.launch {
-                        state.currentWillId = will.id
+                        uiState.currentWillId = will.id
                         ui.titleInput.value = will.title
                         ui.contentArea.value = will.content
                         ui.titleInput.disabled = false
@@ -320,9 +321,9 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     suspend fun loadSharedWills() {
         showSection("list")
         updateNavSelection(ui.sharedWillsBtn)
-        state.isSharedMode = true
+        uiState.isSharedMode = true
         ui.listDiv.innerHTML = "<h2>Доступные мне</h2>"
-        val wills = apiClient.getSharedWills()
+        val wills = controller.loadSharedWills()
         if (wills.isEmpty()) {
             ui.listDiv.innerHTML += "<p style='color: var(--on-surface-variant)'>Вам пока ничего не открыли.</p>"
         } else {
@@ -332,7 +333,7 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
                 item.innerHTML = "<h3>${will.title}</h3><p>От: ${will.ownerEmail}</p>"
                 item.onclick = {
                     GlobalScope.launch {
-                        state.currentWillId = will.id
+                        uiState.currentWillId = will.id
                         ui.titleInput.value = will.title
                         ui.contentArea.value = will.content
                         ui.titleInput.disabled = true
@@ -351,7 +352,7 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     ui.loginButton.onclick = {
         GlobalScope.launch {
             showStatus(ui, "Logging in...")
-            val res = apiClient.login(AuthRequest(ui.emailInput.value, ui.passwordInput.value))
+            val res = controller.login(ui.emailInput.value, ui.passwordInput.value)
             if (res.success) {
                 showStatus(ui, "Welcome back")
                 loadMyWills()
@@ -365,7 +366,7 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     ui.registerButton.onclick = {
         GlobalScope.launch {
             showStatus(ui, "Registering...")
-            val res = apiClient.register(AuthRequest(ui.emailInput.value, ui.passwordInput.value))
+            val res = controller.register(ui.emailInput.value, ui.passwordInput.value)
             showStatus(ui, res.message, !res.success)
             if (res.success) showSection("verify")
         }
@@ -378,7 +379,7 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
 
     ui.verifyBtn.onclick = {
         GlobalScope.launch {
-            val res = apiClient.verify(VerifyRequest(ui.emailInput.value, ui.codeInput.value))
+            val res = controller.verify(ui.emailInput.value, ui.codeInput.value)
             showStatus(ui, res.message, !res.success)
             if (res.success) showSection("auth")
         }
@@ -389,7 +390,7 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     ui.sharedWillsBtn.onclick = { GlobalScope.launch { loadSharedWills() } }
     ui.createWillNavBtn.onclick = {
         updateNavSelection(ui.createWillNavBtn)
-        state.currentWillId = null
+        uiState.currentWillId = null
         ui.titleInput.value = ""
         ui.contentArea.value = ""
         ui.titleInput.disabled = false
@@ -408,15 +409,15 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
                 return@launch
             }
             showStatus(ui, "Saving...")
-            val id = state.currentWillId
+            val id = uiState.currentWillId
             val res = if (id == null) {
-                apiClient.createWill(CreateWillRequest(title, ui.contentArea.value))
+                controller.createWill(title, ui.contentArea.value)
             } else {
-                apiClient.updateWill(id, UpdateWillRequest(title, ui.contentArea.value))
+                controller.updateWill(id, title, ui.contentArea.value)
             }
             if (res != null) {
                 showStatus(ui, "Saved")
-                state.currentWillId = res.id
+                uiState.currentWillId = res.id
                 ui.accessSection.style.display = "block"
                 ui.allowedList.textContent = "Доступ: ${res.allowedEmails.joinToString()}"
             } else {
@@ -426,10 +427,10 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     }
 
     ui.addAccessBtn.onclick = {
-        val id = state.currentWillId
+        val id = uiState.currentWillId
         if (id != null) {
             GlobalScope.launch {
-                val res = apiClient.addAccess(id, AddAccessRequest(ui.accessInput.value))
+                val res = controller.addAccess(id, ui.accessInput.value)
                 if (res != null) {
                     showStatus(ui, "Access granted")
                     ui.allowedList.textContent = "Доступ: ${res.allowedEmails.joinToString()}"

@@ -3,11 +3,8 @@ plugins {
     kotlin("plugin.serialization")
 }
 
-repositories {
-    mavenCentral()
-}
-
 kotlin {
+    jvmToolchain(17)
     jvm {
         mainRun {
             mainClass.set("org.mywill.client.MainKt")

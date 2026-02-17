@@ -7,10 +7,6 @@ plugins {
     application
 }
 
-repositories {
-    mavenCentral()
-}
-
 ext {
     set("springCloudVersion", "2025.0.1")
 }
