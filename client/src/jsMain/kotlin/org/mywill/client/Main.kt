@@ -51,14 +51,6 @@ fun main() {
     verifyButton.textContent = "Verify Email"
     verifyDiv.appendChild(verifyButton)
 
-    // Old button for testing
-    val oldButtonDiv = document.createElement("div") as HTMLDivElement
-    oldButtonDiv.style.marginTop = "20px"
-    val fetchButton = document.createElement("button") as HTMLButtonElement
-    fetchButton.textContent = "Fetch Admin UI Content"
-    oldButtonDiv.appendChild(fetchButton)
-    container.appendChild(oldButtonDiv)
-
     val resultDiv = document.createElement("div") as HTMLDivElement
     resultDiv.style.marginTop = "20px"
     resultDiv.style.border = "1px solid #ccc"
@@ -111,18 +103,6 @@ fun main() {
                 if (!response.success && response.message.contains("verify")) {
                     verifyDiv.style.display = "block"
                 }
-            } catch (e: Exception) {
-                resultDiv.textContent = "Error: ${e.message}"
-            }
-        }
-    })
-
-    fetchButton.addEventListener("click", {
-        resultDiv.textContent = "Loading..."
-        GlobalScope.launch {
-            try {
-                val response = apiClient.getAdminUi()
-                resultDiv.textContent = "Response: $response"
             } catch (e: Exception) {
                 resultDiv.textContent = "Error: ${e.message}"
             }

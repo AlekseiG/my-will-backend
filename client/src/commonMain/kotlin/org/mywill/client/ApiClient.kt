@@ -26,15 +26,6 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
-    suspend fun getAdminUi(): String {
-        return try {
-            val response: HttpResponse = client.get("$baseUrl/admin/ui")
-            response.bodyAsText()
-        } catch (e: Exception) {
-            "Error: ${e.message}"
-        }
-    }
-
     suspend fun register(authRequest: AuthRequest): AuthResponse {
         return try {
             val response: HttpResponse = client.post("$baseUrl/auth/register") {

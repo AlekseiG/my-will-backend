@@ -9,10 +9,4 @@ class AdminUiController() {
     fun hello(): String {
         return "Greetings from Spring Boot!"
     }
-
-    @GetMapping("/admin/ui")
-    fun listRequests(
-    ): String {
-        return "hellowWorld"
-    }
 }
