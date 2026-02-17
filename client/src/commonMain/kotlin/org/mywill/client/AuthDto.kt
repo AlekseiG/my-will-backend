@@ -13,3 +13,9 @@ data class AuthResponse(
     val success: Boolean,
     val message: String
 )
+
+@Serializable
+data class VerifyRequest(
+    val email: String,
+    val code: String
+)

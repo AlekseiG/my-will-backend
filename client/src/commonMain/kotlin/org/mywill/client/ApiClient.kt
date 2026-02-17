@@ -59,6 +59,18 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    suspend fun verify(verifyRequest: VerifyRequest): AuthResponse {
+        return try {
+            val response: HttpResponse = client.post("$baseUrl/auth/verify") {
+                contentType(ContentType.Application.Json)
+                setBody(verifyRequest)
+            }
+            Json.decodeFromString<AuthResponse>(response.bodyAsText())
+        } catch (e: Exception) {
+            AuthResponse(false, "Error: ${e.message}")
+        }
+    }
+
     fun close() {
         client.close()
     }

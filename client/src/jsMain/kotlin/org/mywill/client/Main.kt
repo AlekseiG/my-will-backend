@@ -37,6 +37,20 @@ fun main() {
     registerButton.textContent = "Register"
     formDiv.appendChild(registerButton)
 
+    // Verification Section
+    val verifyDiv = document.createElement("div") as HTMLDivElement
+    verifyDiv.style.marginTop = "10px"
+    verifyDiv.style.display = "none" // Hidden initially
+    container.appendChild(verifyDiv)
+
+    val codeInput = document.createElement("input") as HTMLInputElement
+    codeInput.placeholder = "Verification Code"
+    verifyDiv.appendChild(codeInput)
+
+    val verifyButton = document.createElement("button") as HTMLButtonElement
+    verifyButton.textContent = "Verify Email"
+    verifyDiv.appendChild(verifyButton)
+
     // Old button for testing
     val oldButtonDiv = document.createElement("div") as HTMLDivElement
     oldButtonDiv.style.marginTop = "20px"
@@ -60,6 +74,26 @@ fun main() {
             try {
                 val response = apiClient.register(AuthRequest(email, password))
                 resultDiv.textContent = "Register Response: ${response.success} - ${response.message}"
+                if (response.success) {
+                    verifyDiv.style.display = "block"
+                }
+            } catch (e: Exception) {
+                resultDiv.textContent = "Error: ${e.message}"
+            }
+        }
+    })
+
+    verifyButton.addEventListener("click", {
+        val email = emailInput.value
+        val code = codeInput.value
+        resultDiv.textContent = "Verifying..."
+        GlobalScope.launch {
+            try {
+                val response = apiClient.verify(VerifyRequest(email, code))
+                resultDiv.textContent = "Verify Response: ${response.success} - ${response.message}"
+                if (response.success) {
+                    verifyDiv.style.display = "none"
+                }
             } catch (e: Exception) {
                 resultDiv.textContent = "Error: ${e.message}"
             }
@@ -74,6 +108,9 @@ fun main() {
             try {
                 val response = apiClient.login(AuthRequest(email, password))
                 resultDiv.textContent = "Login Response: ${response.success} - ${response.message}"
+                if (!response.success && response.message.contains("verify")) {
+                    verifyDiv.style.display = "block"
+                }
             } catch (e: Exception) {
                 resultDiv.textContent = "Error: ${e.message}"
             }

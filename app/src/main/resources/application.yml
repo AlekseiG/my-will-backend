@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    include: secret
   application:
     name: MyWill
   datasource:
@@ -17,6 +19,19 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: alexey9113@gmail.com
+    # Пароль берется из application-secret.yml
+    password: ${spring.mail.password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 logging:
   level:
     org.cryai: DEBUG

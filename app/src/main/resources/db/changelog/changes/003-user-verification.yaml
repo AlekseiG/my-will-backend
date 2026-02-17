@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 3
+      author: junie
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: verified
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: verification_code
+                  type: VARCHAR(4)

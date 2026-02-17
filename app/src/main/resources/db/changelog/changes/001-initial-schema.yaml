@@ -5,3 +5,7 @@ databaseChangeLog:
       changes:
         - sql:
             sql: CREATE SCHEMA IF NOT EXISTS my_will;
+            dbms: postgresql
+        - sql:
+            sql: CREATE SCHEMA IF NOT EXISTS "my_will";
+            dbms: h2

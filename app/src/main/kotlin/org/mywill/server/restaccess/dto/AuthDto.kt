@@ -9,3 +9,8 @@ data class AuthResponse(
     val success: Boolean = false,
     val message: String = ""
 )
+
+data class VerifyRequest(
+    val email: String = "",
+    val code: String = ""
+)

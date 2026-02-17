@@ -3,7 +3,7 @@ package org.mywill.server.domain.entity
 import jakarta.persistence.*
 
 @Entity
-@Table(name = "users", schema = "my_will")
+@Table(name = "users")
 class User(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,5 +13,11 @@ class User(
     val email: String,
 
     @Column(nullable = false)
-    val password: String
+    var password: String,
+
+    @Column(nullable = false)
+    var verified: Boolean = false,
+
+    @Column(name = "verification_code")
+    var verificationCode: String? = null
 )
