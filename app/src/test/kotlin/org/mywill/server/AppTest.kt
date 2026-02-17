@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.get
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@org.springframework.test.context.ActiveProfiles("test")
 class HelloControllerTest(@Autowired private val mvc: MockMvc) {
 
     @Test
