@@ -1,13 +1,11 @@
-package org.mywill.server.restaccess.controller
+package org.mywill.server.controller
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.mywill.server.restaccess.dto.AddAccessRequest
-import org.mywill.server.restaccess.dto.UpdateWillRequest
-import org.mywill.server.restaccess.dto.WillDto
+import org.mywill.server.controller.dto.AddAccessRequest
+import org.mywill.server.controller.dto.UpdateWillRequest
+import org.mywill.server.controller.dto.WillDto
 import org.mywill.server.service.WillService
 import org.springframework.http.ResponseEntity
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.web.bind.annotation.*
 import java.security.Principal
 private val logger = KotlinLogging.logger {}

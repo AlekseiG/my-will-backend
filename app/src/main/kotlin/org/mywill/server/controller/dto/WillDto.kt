@@ -1,4 +1,4 @@
-package org.mywill.server.restaccess.dto
+package org.mywill.server.controller.dto
 
 data class WillDto(
     val id: Long? = null,

@@ -2,18 +2,17 @@ package org.mywill.server.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.mywill.server.config.JwtUtils
-import org.mywill.server.domain.entity.User
-import org.mywill.server.domain.repository.UserRepository
-import org.mywill.server.restaccess.dto.AuthRequest
-import org.mywill.server.restaccess.dto.AuthResponse
-import org.mywill.server.restaccess.dto.VerifyRequest
+import org.mywill.server.entity.User
+import org.mywill.server.repository.UserRepository
+import org.mywill.server.controller.dto.AuthRequest
+import org.mywill.server.controller.dto.AuthResponse
+import org.mywill.server.controller.dto.VerifyRequest
 import jakarta.servlet.http.HttpSession
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
-import java.util.*
 import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}

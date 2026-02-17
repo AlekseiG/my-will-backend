@@ -1,10 +1,9 @@
 package org.mywill.server.service
 
-import org.mywill.server.domain.entity.User
-import org.mywill.server.domain.entity.Will
-import org.mywill.server.domain.repository.WillRepository
-import org.mywill.server.domain.repository.UserRepository
-import org.mywill.server.restaccess.dto.WillDto
+import org.mywill.server.entity.Will
+import org.mywill.server.repository.WillRepository
+import org.mywill.server.repository.UserRepository
+import org.mywill.server.controller.dto.WillDto
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 

@@ -2,11 +2,11 @@ package org.mywill.server
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
-import org.mywill.server.restaccess.dto.AddAccessRequest
-import org.mywill.server.restaccess.dto.AuthRequest
-import org.mywill.server.restaccess.dto.UpdateWillRequest
-import org.mywill.server.restaccess.dto.VerifyRequest
-import org.mywill.server.domain.repository.UserRepository
+import org.mywill.server.controller.dto.AddAccessRequest
+import org.mywill.server.controller.dto.AuthRequest
+import org.mywill.server.controller.dto.UpdateWillRequest
+import org.mywill.server.controller.dto.VerifyRequest
+import org.mywill.server.repository.UserRepository
 import org.mywill.server.service.EmailService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.mockito.Mockito.mock
-import org.springframework.mock.web.MockHttpSession
+
 // Removed unused import
 
 @SpringBootTest

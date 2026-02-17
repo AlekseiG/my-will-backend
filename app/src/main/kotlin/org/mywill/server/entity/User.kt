@@ -1,4 +1,4 @@
-package org.mywill.server.domain.entity
+package org.mywill.server.entity
 
 import jakarta.persistence.*
 

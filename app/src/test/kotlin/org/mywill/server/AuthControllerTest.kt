@@ -2,9 +2,9 @@ package org.mywill.server
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
-import org.mywill.server.restaccess.dto.AuthRequest
-import org.mywill.server.restaccess.dto.VerifyRequest
-import org.mywill.server.domain.repository.UserRepository
+import org.mywill.server.controller.dto.AuthRequest
+import org.mywill.server.controller.dto.VerifyRequest
+import org.mywill.server.repository.UserRepository
 import org.mywill.server.service.EmailService
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.verify
