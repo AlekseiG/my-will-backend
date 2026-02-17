@@ -29,8 +29,6 @@ class ClientBuildTest {
     @Test
     fun testRangeErrorReproduction() {
         // Пытаемся воспроизвести ошибку Ranges.kt:306 "Step must be positive"
-        // Это обычно случается при создании прогрессии с нулевым или отрицательным шагом.
-        // Но в Kotlin/JS stdlib Ranges.kt:306 часто соответствует проверке шага в IntProgression.
         try {
             val range = 1..10 step 1
             assertEquals(1, range.step)
@@ -38,10 +36,5 @@ class ClientBuildTest {
             println("Caught range error: ${e.message}")
             throw e
         }
-    }
-
-    @Test
-    fun testRangeWithNullStep() {
-        // Тест удален, так как он намеренно вызывал ошибку
     }
 }

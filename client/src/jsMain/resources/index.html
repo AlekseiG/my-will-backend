@@ -2,9 +2,240 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>MyWill Client</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MyWill — Legacy of Love</title>
+    <style>
+        :root {
+            --primary: #6750A4;
+            --on-primary: #FFFFFF;
+            --primary-container: #EADDFF;
+            --on-primary-container: #21005D;
+            --secondary: #625B71;
+            --surface: #FEF7FF;
+            --on-surface: #1D1B20;
+            --surface-variant: #E7E0EC;
+            --on-surface-variant: #49454F;
+            --outline: #79747E;
+            --error: #B3261E;
+            --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font-family);
+            background-color: var(--surface);
+            color: var(--on-surface);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+
+        /* Forms */
+        .card {
+            background: var(--surface-variant);
+            border-radius: 24px;
+            padding: 24px;
+            margin: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        h1, h2, h3 {
+            margin-top: 0;
+            color: var(--on-surface);
+        }
+
+        .input-field {
+            width: 100%;
+            height: 56px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--outline);
+            border-radius: 12px;
+            background: var(--surface);
+            font-size: 16px;
+            color: var(--on-surface);
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            border-width: 2px;
+        }
+
+        .btn {
+            height: 48px;
+            padding: 0 24px;
+            border-radius: 24px;
+            border: none;
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--on-primary);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-google {
+            background: #FFFFFF;
+            color: #1f1f1f;
+            border: 1px solid #747775;
+        }
+
+        .btn-text {
+            background: transparent;
+            color: var(--primary);
+            padding: 0 12px;
+        }
+
+        /* Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: var(--surface-variant);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 8px;
+            z-index: 1000;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--on-surface-variant);
+            text-decoration: none;
+            font-size: 12px;
+            flex: 1;
+            padding: 8px 0;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            color: var(--on-primary-container);
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .active .nav-icon {
+            background: var(--primary-container);
+        }
+
+        /* List Items */
+        .will-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--surface-variant);
+            cursor: pointer;
+        }
+
+        .will-card h3 {
+            margin-bottom: 4px;
+            font-size: 18px;
+        }
+
+        .will-card p {
+            margin: 0;
+            color: var(--on-surface-variant);
+            font-size: 14px;
+        }
+
+        /* Editor */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            flex: 1;
+        }
+
+        .content-area {
+            flex: 1;
+            min-height: 300px;
+            border: none;
+            resize: none;
+            font-size: 16px;
+            line-height: 1.5;
+            background: transparent;
+            color: var(--on-surface);
+            padding: 8px 0;
+        }
+
+        .content-area:focus {
+            outline: none;
+        }
+
+        .status-msg {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 24px;
+            background: var(--on-surface);
+            color: var(--surface);
+            font-size: 14px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .status-msg.show {
+            opacity: 1;
+        }
+        
+        .status-msg.error {
+            background: var(--error);
+        }
+
+    </style>
 </head>
 <body>
+    <div id="root"></div>
     <script src="client.js"></script>
 </body>
 </html>

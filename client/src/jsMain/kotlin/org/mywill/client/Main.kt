@@ -24,16 +24,28 @@ fun main() {
     
     println("[DEBUG_LOG] Client JS starting at ${window.location.href}")
     
-    try {
-        val apiClient = ApiClient()
-        println("[DEBUG_LOG] ApiClient initialized")
+    val apiClient: ApiClient? = try {
+        println("[DEBUG_LOG] Initializing ApiClient...")
+        val client = ApiClient()
+        println("[DEBUG_LOG] ApiClient initialized successfully")
+        client
+    } catch (e: Throwable) {
+        println("[ERROR_LOG] ApiClient initialization FATAL ERROR: ${e.message}")
+        null
+    }
+    
+    if (apiClient == null) {
+        println("[ERROR_LOG] Cannot continue without ApiClient")
+        return
+    }
 
+    try {
         // Состояние приложения
         val appState = AppState()
 
         // Создание элементов интерфейса
         val ui = createUI()
-        document.body?.appendChild(ui.container)
+        document.getElementById("root")?.appendChild(ui.container)
 
         // Инициализация обработчиков событий
         setupEventHandlers(ui, apiClient, appState)
@@ -49,12 +61,9 @@ fun main() {
                 GlobalScope.launch {
                     // Переключаемся на список завещаний
                     ui.authDiv.style.display = "none"
-                    ui.navDiv.style.display = "block"
-                    ui.statusDiv.textContent = "Logged in via Google"
+                    ui.navDiv.style.display = "flex"
+                    showStatus(ui, "Logged in via Google")
                     
-                    // Загружаем завещания (это зашито в loadMyWills внутри setupEventHandlers, 
-                    // но нам нужен доступ к ней или повторить логику. 
-                    // Проще вызвать клик по кнопке "Мои завещания")
                     ui.myWillsBtn.click()
                 }
             }
@@ -63,6 +72,17 @@ fun main() {
     } catch (e: Throwable) {
         println("[ERROR_LOG] Error during Main initialization: ${e.message}")
     }
+}
+
+/**
+ * Показывает статусное сообщение с анимацией.
+ */
+fun showStatus(ui: AppUI, message: String, isError: Boolean = false) {
+    ui.statusDiv.textContent = message
+    ui.statusDiv.className = "status-msg show" + if (isError) " error" else ""
+    window.setTimeout({
+        ui.statusDiv.className = "status-msg"
+    }, 3000)
 }
 
 /**
@@ -79,9 +99,9 @@ class AppState {
 class AppUI(
     val container: HTMLDivElement,
     val navDiv: HTMLDivElement,
-    val myWillsBtn: HTMLButtonElement,
-    val sharedWillsBtn: HTMLButtonElement,
-    val createWillNavBtn: HTMLButtonElement,
+    val myWillsBtn: HTMLDivElement,
+    val sharedWillsBtn: HTMLDivElement,
+    val createWillNavBtn: HTMLDivElement,
     val authDiv: HTMLDivElement,
     val emailInput: HTMLInputElement,
     val passwordInput: HTMLInputElement,
@@ -108,89 +128,98 @@ class AppUI(
  */
 fun createUI(): AppUI {
     val container = document.createElement("div") as HTMLDivElement
-    container.style.apply {
-        maxWidth = "800px"
-        margin = "0 auto"
-        fontFamily = "sans-serif"
-    }
+    container.className = "app-container"
 
-    // --- Навигация ---
+    // --- Навигация (Bottom Nav) ---
     val navDiv = document.createElement("div") as HTMLDivElement
-    navDiv.style.apply {
-        marginBottom = "20px"
-        borderBottom = "1px solid #ccc"
-        padding = "10px 0"
-        display = "none"
-    }
+    navDiv.className = "bottom-nav"
+    navDiv.style.display = "none"
     container.appendChild(navDiv)
 
-    val myWillsBtn = createButton("Мои завещания", navDiv)
-    val sharedWillsBtn = createButton("Доступные мне", navDiv)
-    val createWillNavBtn = createButton("Создать новое", navDiv)
+    val myWillsBtn = createNavItem("Мои", "M", navDiv)
+    val sharedWillsBtn = createNavItem("Чужие", "S", navDiv)
+    val createWillNavBtn = createNavItem("Новое", "+", navDiv)
 
     // --- Секция авторизации ---
     val authDiv = document.createElement("div") as HTMLDivElement
+    authDiv.className = "card"
+    authDiv.innerHTML = "<h1>MyWill</h1><p>Сохраните ваше наследие</p>"
     container.appendChild(authDiv)
 
     val emailInput = createInput("Email", authDiv)
     val passwordInput = createInput("Password", authDiv, "password")
-    val loginButton = createButton("Login", authDiv)
-    val registerButton = createButton("Register", authDiv)
+    
+    val btnRow = document.createElement("div") as HTMLDivElement
+    btnRow.style.display = "flex"
+    btnRow.style.asDynamic().gap = "8px"
+    authDiv.appendChild(btnRow)
+    
+    val loginButton = createButton("Login", btnRow, "btn-primary")
+    val registerButton = createButton("Register", btnRow, "btn-text")
 
-    val googleLoginBtn = createButton("Login with Google", authDiv)
-    googleLoginBtn.style.backgroundColor = "#4285F4"
-    googleLoginBtn.style.color = "white"
-    googleLoginBtn.style.marginLeft = "10px"
+    val googleLoginBtn = createButton("Login with Google", authDiv, "btn-google")
+    googleLoginBtn.style.width = "100%"
+    googleLoginBtn.style.marginTop = "16px"
 
     // --- Секция верификации ---
     val verifyDiv = document.createElement("div") as HTMLDivElement
+    verifyDiv.className = "card"
     verifyDiv.style.display = "none"
+    verifyDiv.innerHTML = "<h2>Верификация</h2><p>Введите код из письма</p>"
     container.appendChild(verifyDiv)
     
     val codeInput = createInput("Code", verifyDiv)
-    val verifyBtn = createButton("Verify", verifyDiv)
+    val verifyBtn = createButton("Verify", verifyDiv, "btn-primary")
 
     // --- Секция списка ---
     val listDiv = document.createElement("div") as HTMLDivElement
+    listDiv.style.padding = "16px"
     listDiv.style.display = "none"
     container.appendChild(listDiv)
 
     // --- Секция редактора ---
     val editorDiv = document.createElement("div") as HTMLDivElement
+    editorDiv.className = "editor-container"
     editorDiv.style.display = "none"
     container.appendChild(editorDiv)
 
     val titleInput = createInput("Заголовок", editorDiv)
-    titleInput.style.width = "100%"
-    titleInput.style.marginBottom = "10px"
+    titleInput.className = "input-field"
+    titleInput.style.fontWeight = "bold"
+    titleInput.style.fontSize = "20px"
+    titleInput.style.border = "none"
+    titleInput.style.borderBottom = "1px solid var(--outline)"
+    titleInput.style.borderRadius = "0"
 
     val contentArea = document.createElement("textarea") as HTMLTextAreaElement
-    contentArea.style.apply {
-        width = "100%"
-        height = "300px"
-    }
+    contentArea.className = "content-area"
+    contentArea.placeholder = "Ваше послание..."
     editorDiv.appendChild(contentArea)
 
-    val saveBtn = createButton("Сохранить", editorDiv)
+    val saveBtn = createButton("Сохранить", editorDiv, "btn-primary")
+    saveBtn.style.width = "100%"
 
     // --- Управление доступом ---
     val accessSection = document.createElement("div") as HTMLDivElement
-    accessSection.style.marginTop = "20px"
+    accessSection.className = "card"
+    accessSection.style.marginTop = "24px"
+    accessSection.innerHTML = "<h3>Доступ</h3>"
     editorDiv.appendChild(accessSection)
 
     val accessInput = createInput("Email для доступа", accessSection)
-    val addAccessBtn = createButton("Дать доступ", accessSection)
+    val addAccessBtn = createButton("Дать доступ", accessSection, "btn-secondary")
+    addAccessBtn.style.width = "100%"
+    
     val allowedList = document.createElement("div") as HTMLDivElement
+    allowedList.style.marginTop = "12px"
+    allowedList.style.fontSize = "14px"
+    allowedList.style.color = "var(--on-surface-variant)"
     accessSection.appendChild(allowedList)
 
     // --- Статус-бар ---
     val statusDiv = document.createElement("div") as HTMLDivElement
-    statusDiv.style.apply {
-        marginTop = "20px"
-        padding = "10px"
-        backgroundColor = "#f0f0f0"
-    }
-    container.appendChild(statusDiv)
+    statusDiv.className = "status-msg"
+    document.body?.appendChild(statusDiv)
 
     return AppUI(
         container, navDiv, myWillsBtn, sharedWillsBtn, createWillNavBtn,
@@ -202,9 +231,10 @@ fun createUI(): AppUI {
 }
 
 // Вспомогательные функции для создания UI элементов
-private fun createButton(text: String, parent: HTMLDivElement): HTMLButtonElement {
+private fun createButton(text: String, parent: HTMLDivElement, className: String = ""): HTMLButtonElement {
     val btn = document.createElement("button") as HTMLButtonElement
     btn.textContent = text
+    btn.className = "btn $className"
     parent.appendChild(btn)
     return btn
 }
@@ -213,8 +243,26 @@ private fun createInput(placeholderText: String, parent: HTMLDivElement, inputTy
     val input = document.createElement("input") as HTMLInputElement
     input.placeholder = placeholderText
     input.type = inputType
+    input.className = "input-field"
     parent.appendChild(input)
     return input
+}
+
+private fun createNavItem(text: String, icon: String, parent: HTMLDivElement): HTMLDivElement {
+    val item = document.createElement("div") as HTMLDivElement
+    item.className = "nav-item"
+    
+    val iconDiv = document.createElement("div") as HTMLDivElement
+    iconDiv.className = "nav-icon"
+    iconDiv.textContent = icon
+    
+    val textDiv = document.createElement("div") as HTMLDivElement
+    textDiv.textContent = text
+    
+    item.appendChild(iconDiv)
+    item.appendChild(textDiv)
+    parent.appendChild(item)
+    return item
 }
 
 /**
@@ -223,34 +271,34 @@ private fun createInput(placeholderText: String, parent: HTMLDivElement, inputTy
 @OptIn(DelicateCoroutinesApi::class)
 fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     
+    fun updateNavSelection(selected: HTMLDivElement) {
+        listOf(ui.myWillsBtn, ui.sharedWillsBtn, ui.createWillNavBtn).forEach {
+            it.className = "nav-item"
+        }
+        selected.className = "nav-item active"
+    }
+
     fun showSection(section: String) {
         ui.authDiv.style.display = if (section == "auth") "block" else "none"
         ui.verifyDiv.style.display = if (section == "verify") "block" else "none"
         ui.listDiv.style.display = if (section == "list") "block" else "none"
-        ui.editorDiv.style.display = if (section == "editor") "block" else "none"
-        ui.navDiv.style.display = if (section != "auth" && section != "verify") "block" else "none"
-        
-        ui.statusDiv.textContent = ""
-        ui.statusDiv.style.color = "black"
+        ui.editorDiv.style.display = if (section == "editor") "flex" else "none"
+        ui.navDiv.style.display = if (section != "auth" && section != "verify") "flex" else "none"
     }
 
     suspend fun loadMyWills() {
         showSection("list")
+        updateNavSelection(ui.myWillsBtn)
         state.isSharedMode = false
-        ui.listDiv.innerHTML = "<h3>Мои завещания</h3>"
+        ui.listDiv.innerHTML = "<h2>Мои завещания</h2>"
         val wills = apiClient.getMyWills()
         if (wills.isEmpty()) {
-            ui.listDiv.innerHTML += "<p>У вас еще нет завещаний.</p>"
+            ui.listDiv.innerHTML += "<p style='color: var(--on-surface-variant)'>У вас еще нет завещаний.</p>"
         } else {
             wills.forEach { will ->
                 val item = document.createElement("div") as HTMLDivElement
-                item.style.apply {
-                    padding = "10px"
-                    border = "1px solid #eee"
-                    marginBottom = "5px"
-                    cursor = "pointer"
-                }
-                item.innerHTML = "<b>${will.title}</b>"
+                item.className = "will-card"
+                item.innerHTML = "<h3>${will.title}</h3><p>${will.content.take(50)}${if(will.content.length > 50) "..." else ""}</p>"
                 item.onclick = {
                     GlobalScope.launch {
                         state.currentWillId = will.id
@@ -258,7 +306,7 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
                         ui.contentArea.value = will.content
                         ui.titleInput.disabled = false
                         ui.contentArea.disabled = false
-                        ui.saveBtn.style.display = "inline-block"
+                        ui.saveBtn.style.display = "inline-flex"
                         ui.accessSection.style.display = "block"
                         ui.allowedList.textContent = "Доступ: ${will.allowedEmails.joinToString()}"
                         showSection("editor")
@@ -271,21 +319,17 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
 
     suspend fun loadSharedWills() {
         showSection("list")
+        updateNavSelection(ui.sharedWillsBtn)
         state.isSharedMode = true
-        ui.listDiv.innerHTML = "<h3>Доступные мне завещания</h3>"
+        ui.listDiv.innerHTML = "<h2>Доступные мне</h2>"
         val wills = apiClient.getSharedWills()
         if (wills.isEmpty()) {
-            ui.listDiv.innerHTML += "<p>Вам пока ничего не открыли.</p>"
+            ui.listDiv.innerHTML += "<p style='color: var(--on-surface-variant)'>Вам пока ничего не открыли.</p>"
         } else {
             wills.forEach { will ->
                 val item = document.createElement("div") as HTMLDivElement
-                item.style.apply {
-                    padding = "10px"
-                    border = "1px solid #eee"
-                    marginBottom = "5px"
-                    cursor = "pointer"
-                }
-                item.innerHTML = "<b>${will.title}</b> (от ${will.ownerEmail})"
+                item.className = "will-card"
+                item.innerHTML = "<h3>${will.title}</h3><p>От: ${will.ownerEmail}</p>"
                 item.onclick = {
                     GlobalScope.launch {
                         state.currentWillId = will.id
@@ -306,13 +350,13 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     // Обработчики кнопок авторизации
     ui.loginButton.onclick = {
         GlobalScope.launch {
-            ui.statusDiv.textContent = "Logging in..."
+            showStatus(ui, "Logging in...")
             val res = apiClient.login(AuthRequest(ui.emailInput.value, ui.passwordInput.value))
             if (res.success) {
-                ui.statusDiv.textContent = "Logged in"
+                showStatus(ui, "Welcome back")
                 loadMyWills()
             } else {
-                ui.statusDiv.textContent = res.message
+                showStatus(ui, res.message, true)
                 if (res.message.contains("verify")) showSection("verify")
             }
         }
@@ -320,9 +364,9 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
 
     ui.registerButton.onclick = {
         GlobalScope.launch {
-            ui.statusDiv.textContent = "Registering..."
+            showStatus(ui, "Registering...")
             val res = apiClient.register(AuthRequest(ui.emailInput.value, ui.passwordInput.value))
-            ui.statusDiv.textContent = res.message
+            showStatus(ui, res.message, !res.success)
             if (res.success) showSection("verify")
         }
     }
@@ -335,7 +379,7 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     ui.verifyBtn.onclick = {
         GlobalScope.launch {
             val res = apiClient.verify(VerifyRequest(ui.emailInput.value, ui.codeInput.value))
-            ui.statusDiv.textContent = res.message
+            showStatus(ui, res.message, !res.success)
             if (res.success) showSection("auth")
         }
     }
@@ -344,12 +388,13 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
     ui.myWillsBtn.onclick = { GlobalScope.launch { loadMyWills() } }
     ui.sharedWillsBtn.onclick = { GlobalScope.launch { loadSharedWills() } }
     ui.createWillNavBtn.onclick = {
+        updateNavSelection(ui.createWillNavBtn)
         state.currentWillId = null
         ui.titleInput.value = ""
         ui.contentArea.value = ""
         ui.titleInput.disabled = false
         ui.contentArea.disabled = false
-        ui.saveBtn.style.display = "inline-block"
+        ui.saveBtn.style.display = "inline-flex"
         ui.accessSection.style.display = "none"
         showSection("editor")
     }
@@ -359,12 +404,10 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
         GlobalScope.launch {
             val title = ui.titleInput.value.trim()
             if (title.isEmpty()) {
-                ui.statusDiv.textContent = "Ошибка: Заголовок обязателен!"
-                ui.statusDiv.style.color = "red"
+                showStatus(ui, "Заголовок обязателен!", true)
                 return@launch
             }
-            ui.statusDiv.style.color = "black"
-            ui.statusDiv.textContent = "Saving..."
+            showStatus(ui, "Saving...")
             val id = state.currentWillId
             val res = if (id == null) {
                 apiClient.createWill(CreateWillRequest(title, ui.contentArea.value))
@@ -372,12 +415,12 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
                 apiClient.updateWill(id, UpdateWillRequest(title, ui.contentArea.value))
             }
             if (res != null) {
-                ui.statusDiv.textContent = "Saved"
+                showStatus(ui, "Saved")
                 state.currentWillId = res.id
                 ui.accessSection.style.display = "block"
                 ui.allowedList.textContent = "Доступ: ${res.allowedEmails.joinToString()}"
             } else {
-                ui.statusDiv.textContent = "Error saving"
+                showStatus(ui, "Error saving", true)
             }
         }
     }
@@ -388,8 +431,11 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
             GlobalScope.launch {
                 val res = apiClient.addAccess(id, AddAccessRequest(ui.accessInput.value))
                 if (res != null) {
+                    showStatus(ui, "Access granted")
                     ui.allowedList.textContent = "Доступ: ${res.allowedEmails.joinToString()}"
                     ui.accessInput.value = ""
+                } else {
+                    showStatus(ui, "Error adding access", true)
                 }
             }
         }

@@ -14,7 +14,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
 
     private val client = try {
         println("[DEBUG_LOG] HttpClient initializing...")
-        val c = HttpClient {
+        HttpClient {
             install(ContentNegotiation) {
                 println("[DEBUG_LOG] ContentNegotiation installing...")
                 json(Json {
@@ -23,8 +23,6 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
             }
             install(HttpCookies)
         }
-        println("[DEBUG_LOG] HttpClient initialized successfully")
-        c
     } catch (e: Exception) {
         println("[ERROR_LOG] HttpClient initialization failed: ${e.message}")
         throw e

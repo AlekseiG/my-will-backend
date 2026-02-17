@@ -37,6 +37,8 @@ class SecurityConfig(
                     .anyRequest().authenticated()
             }
             .oauth2Login { oauth2 ->
+                oauth2.loginPage("http://localhost:8081") // Указываем фронтенд как страницу логина
+                oauth2.authorizationEndpoint { it.baseUri("/oauth2/authorization") }
                 oauth2.successHandler { _, response, authentication ->
                     val principal = authentication.principal as org.springframework.security.oauth2.core.user.OAuth2User
                     val email = principal.getAttribute<String>("email") ?: throw RuntimeException("Email not found in OAuth2 provider")
