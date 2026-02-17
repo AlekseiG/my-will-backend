@@ -3,14 +3,16 @@ package org.mywill.server.restaccess.controller
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/admin/ui")
 class AdminUiController() {
 
-    @GetMapping
+    @GetMapping("/")
+    fun hello(): String {
+        return "Greetings from Spring Boot!"
+    }
+
+    @GetMapping("/admin/ui")
     fun listRequests(
     ): String {
         return "hellowWorld"
     }
-
-
 }

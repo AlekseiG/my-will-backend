@@ -13,3 +13,4 @@ plugins {
 
 rootProject.name = "MyWill"
 include("app")
+include("client")

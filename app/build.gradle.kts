@@ -1,10 +1,9 @@
 plugins {
-    kotlin("plugin.spring") version "2.2.21"
-    kotlin("plugin.jpa") version "2.2.21"
-    kotlin("jvm") version "2.3.0"
-    id("org.springframework.boot") version "3.5.9"
-    id("io.spring.dependency-management") version "1.1.7"
-    // Apply the application plugin to add support for building a CLI application in Java.
+    kotlin("plugin.spring")
+    kotlin("plugin.jpa")
+    kotlin("jvm")
+    id("org.springframework.boot")
+    id("io.spring.dependency-management")
     application
 }
 
@@ -48,7 +47,7 @@ java {
 }
 
 application {
-    mainClass = "org.example.AppKt"
+    mainClass = "org.mywill.server.AppKt"
 }
 
 kotlin {
