@@ -37,6 +37,11 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    fun setToken(token: String) {
+        authToken = token
+        println("[DEBUG_LOG] Auth token manually set")
+    }
+
     suspend fun getHello(): String {
         return try {
             val response: HttpResponse = client.get("$baseUrl/") {

@@ -38,6 +38,28 @@ fun main() {
         // Инициализация обработчиков событий
         setupEventHandlers(ui, apiClient, appState)
 
+        // Проверка наличия токена в URL (после редиректа OAuth2)
+        val hash = window.location.hash
+        if (hash.startsWith("#token=")) {
+            val token = hash.substringAfter("#token=")
+            if (token.isNotEmpty()) {
+                println("[DEBUG_LOG] Token found in URL hash, logging in...")
+                apiClient.setToken(token)
+                window.location.hash = "" // Очищаем hash
+                GlobalScope.launch {
+                    // Переключаемся на список завещаний
+                    ui.authDiv.style.display = "none"
+                    ui.navDiv.style.display = "block"
+                    ui.statusDiv.textContent = "Logged in via Google"
+                    
+                    // Загружаем завещания (это зашито в loadMyWills внутри setupEventHandlers, 
+                    // но нам нужен доступ к ней или повторить логику. 
+                    // Проще вызвать клик по кнопке "Мои завещания")
+                    ui.myWillsBtn.click()
+                }
+            }
+        }
+
     } catch (e: Throwable) {
         println("[ERROR_LOG] Error during Main initialization: ${e.message}")
     }
@@ -65,6 +87,7 @@ class AppUI(
     val passwordInput: HTMLInputElement,
     val loginButton: HTMLButtonElement,
     val registerButton: HTMLButtonElement,
+    val googleLoginBtn: HTMLButtonElement,
     val verifyDiv: HTMLDivElement,
     val codeInput: HTMLInputElement,
     val verifyBtn: HTMLButtonElement,
@@ -113,6 +136,11 @@ fun createUI(): AppUI {
     val passwordInput = createInput("Password", authDiv, "password")
     val loginButton = createButton("Login", authDiv)
     val registerButton = createButton("Register", authDiv)
+
+    val googleLoginBtn = createButton("Login with Google", authDiv)
+    googleLoginBtn.style.backgroundColor = "#4285F4"
+    googleLoginBtn.style.color = "white"
+    googleLoginBtn.style.marginLeft = "10px"
 
     // --- Секция верификации ---
     val verifyDiv = document.createElement("div") as HTMLDivElement
@@ -166,7 +194,7 @@ fun createUI(): AppUI {
 
     return AppUI(
         container, navDiv, myWillsBtn, sharedWillsBtn, createWillNavBtn,
-        authDiv, emailInput, passwordInput, loginButton, registerButton,
+        authDiv, emailInput, passwordInput, loginButton, registerButton, googleLoginBtn,
         verifyDiv, codeInput, verifyBtn, listDiv, editorDiv,
         titleInput, contentArea, saveBtn, accessSection, accessInput,
         addAccessBtn, allowedList, statusDiv
@@ -297,6 +325,11 @@ fun setupEventHandlers(ui: AppUI, apiClient: ApiClient, state: AppState) {
             ui.statusDiv.textContent = res.message
             if (res.success) showSection("verify")
         }
+    }
+
+    ui.googleLoginBtn.onclick = {
+        // Редирект на бэкенд для начала OAuth2 флоу
+        window.location.href = "http://localhost:8080/oauth2/authorization/google"
     }
 
     ui.verifyBtn.onclick = {

@@ -9,3 +9,5 @@ databaseChangeLog:
       file: db/changelog/changes/004-wills-table.yaml
   - include:
       file: db/changelog/changes/005-add-will-title.yaml
+  - include:
+      file: db/changelog/changes/006-make-password-nullable.yaml

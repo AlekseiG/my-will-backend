@@ -13,7 +13,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-class SecurityConfig(private val jwtAuthenticationFilter: JwtAuthenticationFilter) {
+class SecurityConfig(
+    private val jwtAuthenticationFilter: JwtAuthenticationFilter,
+    private val jwtUtils: JwtUtils,
+    private val userRepository: org.mywill.server.repository.UserRepository
+) {
 
     @Bean
     fun passwordEncoder(): PasswordEncoder {
@@ -28,9 +32,25 @@ class SecurityConfig(private val jwtAuthenticationFilter: JwtAuthenticationFilte
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers("/", "/admin/ui", "/auth/**", "/index.html", "/static/**", "/*.js").permitAll()
+                    .requestMatchers("/", "/admin/ui", "/auth/**", "/index.html", "/static/**", "/*.js", "/oauth2/**", "/login/oauth2/**").permitAll()
                     .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                     .anyRequest().authenticated()
+            }
+            .oauth2Login { oauth2 ->
+                oauth2.successHandler { _, response, authentication ->
+                    val principal = authentication.principal as org.springframework.security.oauth2.core.user.OAuth2User
+                    val email = principal.getAttribute<String>("email") ?: throw RuntimeException("Email not found in OAuth2 provider")
+                    
+                    // Find or create user
+                    val user = userRepository.findByEmail(email) ?: userRepository.save(
+                        org.mywill.server.entity.User(email = email, password = null, verified = true)
+                    )
+                    
+                    val token = jwtUtils.generateToken(user.email)
+                    // Redirect to frontend with token in fragment or query param
+                    // For simplicity, let's use a query parameter that the JS will pick up
+                    response.sendRedirect("http://localhost:8081/#token=$token")
+                }
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
         return http.build()

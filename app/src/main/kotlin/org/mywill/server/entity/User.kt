@@ -12,8 +12,8 @@ class User(
     @Column(unique = true, nullable = false)
     val email: String,
 
-    @Column(nullable = false)
-    var password: String,
+    @Column(nullable = true)
+    var password: String? = null,
 
     @Column(nullable = false)
     var verified: Boolean = false,

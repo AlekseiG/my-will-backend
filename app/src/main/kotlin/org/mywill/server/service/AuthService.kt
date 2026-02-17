@@ -74,6 +74,10 @@ class AuthService(
         val user = userRepository.findByEmail(request.email)
             ?: return AuthResponse(false, "Invalid email or password")
         
+        if (user.password == null) {
+            return AuthResponse(false, "This account is for OAuth2 login only")
+        }
+
         if (!user.verified) {
             return AuthResponse(false, "Please verify your email first. Code: ${user.verificationCode}")
         }

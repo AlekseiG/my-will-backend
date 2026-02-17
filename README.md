@@ -24,9 +24,12 @@ spring:
 jwt:
   secret: "your-very-secret-key-at-least-32-chars-long"
   expirationMs: 86400000
+google:
+  client-id: "your-google-client-id"
+  client-secret: "your-google-client-secret"
 ```
 
-> **Примечание:** Для Gmail используйте "Пароли приложений".
+> **Примечание:** Для Gmail используйте "Пароли приложений". Для Google OAuth2 необходимо создать Credentials в Google Cloud Console и добавить `http://localhost:8080/login/oauth2/code/google` в Authorized redirect URIs.
 
 ### 2. Запуск сервера (app)
 Серверная часть реализована на Spring Boot. Для запуска выполните:
