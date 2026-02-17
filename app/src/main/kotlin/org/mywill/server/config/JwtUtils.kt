@@ -1,17 +1,21 @@
 package org.mywill.server.config
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.security.Keys
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.*
 import javax.crypto.SecretKey
 
+private val logger = KotlinLogging.logger {}
+
 @Component
-class JwtUtils {
-    // В реальном приложении секрет должен быть в конфиге
-    private val secret = "my-very-secret-key-that-is-at-least-32-characters-long"
+class JwtUtils(
+    @Value("\${jwt.secret}") private val secret: String,
+    @Value("\${jwt.expirationMs}") private val expirationMs: Long
+) {
     private val key: SecretKey = Keys.hmacShaKeyFor(secret.toByteArray())
-    private val expirationMs = 86400000 // 24 часа
 
     fun generateToken(email: String): String {
         return Jwts.builder()
@@ -31,6 +35,7 @@ class JwtUtils {
                 .payload
                 .subject
         } catch (e: Exception) {
+            logger.error { "Failed to extract email from token: ${e.message}" }
             null
         }
     }
@@ -43,6 +48,7 @@ class JwtUtils {
                 .parseSignedClaims(token)
             true
         } catch (e: Exception) {
+            logger.error { "JWT validation failed: ${e.message}" }
             false
         }
     }

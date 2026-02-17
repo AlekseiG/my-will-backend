@@ -69,11 +69,11 @@ class WillControllerTest {
             jsonPath("$.success") { value(true) }
         }.andReturn()
         
-        val session = loginResponse.request.getSession(false) as MockHttpSession
+        val token = objectMapper.readTree(loginResponse.response.contentAsString).get("token").asText()
 
         // 3. Получение завещания (должно быть 404, так как еще не создано)
         mvc.get("/api/will") {
-            this.session = session
+            header("Authorization", "Bearer $token")
         }.andExpect {
             status { isNotFound() }
         }
@@ -81,7 +81,7 @@ class WillControllerTest {
         // 4. Создание/обновление завещания
         val willContent = "Это мое завещание.\n1. Кота оставить соседу.\n2. Книги в библиотеку."
         mvc.post("/api/will") {
-            this.session = session
+            header("Authorization", "Bearer $token")
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(UpdateWillRequest(willContent))
         }.andExpect {
@@ -91,7 +91,7 @@ class WillControllerTest {
 
         // 5. Получение завещания снова
         mvc.get("/api/will") {
-            this.session = session
+            header("Authorization", "Bearer $token")
         }.andDo { print() }.andExpect {
             status { isOk() }
             jsonPath("$.content") { value(willContent) }
@@ -100,7 +100,7 @@ class WillControllerTest {
         // 6. Добавление доступа
         val accessEmail = "friend@example.com"
         mvc.post("/api/will/access") {
-            this.session = session
+            header("Authorization", "Bearer $token")
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(AddAccessRequest(accessEmail))
         }.andExpect {

@@ -4,9 +4,9 @@ spring:
   application:
     name: MyWill
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres
-    username: postgres
-    password: postgres
+    url: ${spring.datasource.url}
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
     driver-class-name: org.postgresql.Driver
   jpa:
     open-in-view: false
@@ -22,7 +22,7 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: alexey9113@gmail.com
+    username: ${spring.mail.username}
     # Пароль берется из application-secret.yml
     password: ${spring.mail.password}
     properties:
