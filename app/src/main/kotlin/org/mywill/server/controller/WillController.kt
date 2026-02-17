@@ -1,9 +1,7 @@
 package org.mywill.server.controller
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.mywill.server.controller.dto.AddAccessRequest
-import org.mywill.server.controller.dto.UpdateWillRequest
-import org.mywill.server.controller.dto.WillDto
+import org.mywill.server.controller.dto.*
 import org.mywill.server.service.WillService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -15,28 +13,44 @@ private val logger = KotlinLogging.logger {}
 class WillController(private val willService: WillService) {
 
     @GetMapping
-    fun getWill(principal: Principal): ResponseEntity<WillDto> {
-        logger.debug { "[DEBUG_LOG] Get will request for user: ${principal.name}"}
-        val will = willService.getWill(principal.name)
+    fun getMyWills(principal: Principal): List<WillDto> {
+        return willService.getMyWills(principal.name)
+    }
+
+    @GetMapping("/shared")
+    fun getSharedWills(principal: Principal): List<WillDto> {
+        return willService.getSharedWills(principal.name)
+    }
+
+    @GetMapping("/{id}")
+    fun getWill(@PathVariable id: Long, principal: Principal): ResponseEntity<WillDto> {
+        val will = willService.getWill(id, principal.name)
         return if (will != null) ResponseEntity.ok(will) else ResponseEntity.notFound().build()
     }
 
     @PostMapping
+    fun createWill(
+        principal: Principal,
+        @RequestBody request: CreateWillRequest
+    ): WillDto {
+        return willService.createWill(principal.name, request.title, request.content)
+    }
+
+    @PutMapping("/{id}")
     fun updateWill(
+        @PathVariable id: Long,
         principal: Principal,
         @RequestBody request: UpdateWillRequest
     ): WillDto {
-        logger.debug {"[DEBUG_LOG] Update will request received for user: ${principal.name}"}
-        val response = willService.updateWillContent(principal.name, request.content)
-        logger.debug {"[DEBUG_LOG] Update will response: $response"}
-        return response
+        return willService.updateWill(id, principal.name, request.title, request.content)
     }
 
-    @PostMapping("/access")
+    @PostMapping("/{id}/access")
     fun addAccess(
+        @PathVariable id: Long,
         principal: Principal,
         @RequestBody request: AddAccessRequest
     ): WillDto {
-        return willService.addAllowedEmail(principal.name, request.email)
+        return willService.addAllowedEmail(id, principal.name, request.email)
     }
 }

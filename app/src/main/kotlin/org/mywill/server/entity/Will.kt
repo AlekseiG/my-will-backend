@@ -13,6 +13,9 @@ class Will(
     @JoinColumn(name = "owner_id", nullable = false)
     val owner: User,
 
+    @Column(nullable = false)
+    var title: String,
+
     @Column(nullable = false, columnDefinition = "TEXT")
     var content: String,
 

@@ -20,208 +20,277 @@ fun main() {
     try {
         val apiClient = ApiClient()
         println("[DEBUG_LOG] ApiClient initialized")
-        
-        val container = document.createElement("div") as HTMLDivElement
-        document.body?.appendChild(container)
-        println("[DEBUG_LOG] Container added")
 
-        // Form
-        val formDiv = document.createElement("div") as HTMLDivElement
-        container.appendChild(formDiv)
-        println("[DEBUG_LOG] Form div added")
+        val container = document.createElement("div") as HTMLDivElement
+        container.style.maxWidth = "800px"
+        container.style.margin = "0 auto"
+        container.style.fontFamily = "sans-serif"
+        document.body?.appendChild(container)
+
+        // Navigation
+        val navDiv = document.createElement("div") as HTMLDivElement
+        navDiv.style.marginBottom = "20px"
+        navDiv.style.borderBottom = "1px solid #ccc"
+        navDiv.style.padding = "10px 0"
+        navDiv.style.display = "none"
+        container.appendChild(navDiv)
+
+        val myWillsBtn = document.createElement("button") as HTMLButtonElement
+        myWillsBtn.textContent = "Мои завещания"
+        navDiv.appendChild(myWillsBtn)
+
+        val sharedWillsBtn = document.createElement("button") as HTMLButtonElement
+        sharedWillsBtn.textContent = "Доступные мне"
+        navDiv.appendChild(sharedWillsBtn)
+
+        val createWillNavBtn = document.createElement("button") as HTMLButtonElement
+        createWillNavBtn.textContent = "Создать новое"
+        navDiv.appendChild(createWillNavBtn)
+
+        // Auth Section
+        val authDiv = document.createElement("div") as HTMLDivElement
+        container.appendChild(authDiv)
 
         val emailInput = document.createElement("input") as HTMLInputElement
         emailInput.placeholder = "Email"
-        emailInput.type = "email"
-        formDiv.appendChild(emailInput)
+        authDiv.appendChild(emailInput)
 
         val passwordInput = document.createElement("input") as HTMLInputElement
         passwordInput.placeholder = "Password"
         passwordInput.type = "password"
-        formDiv.appendChild(passwordInput)
+        authDiv.appendChild(passwordInput)
 
         val loginButton = document.createElement("button") as HTMLButtonElement
         loginButton.textContent = "Login"
-        formDiv.appendChild(loginButton)
+        authDiv.appendChild(loginButton)
 
         val registerButton = document.createElement("button") as HTMLButtonElement
         registerButton.textContent = "Register"
-        formDiv.appendChild(registerButton)
-        println("[DEBUG_LOG] Form buttons added")
+        authDiv.appendChild(registerButton)
 
         // Verification Section
         val verifyDiv = document.createElement("div") as HTMLDivElement
-        verifyDiv.style.marginTop = "10px"
-        verifyDiv.style.display = "none" // Hidden initially
+        verifyDiv.style.display = "none"
         container.appendChild(verifyDiv)
-
         val codeInput = document.createElement("input") as HTMLInputElement
-        codeInput.placeholder = "Verification Code"
+        codeInput.placeholder = "Code"
         verifyDiv.appendChild(codeInput)
+        val verifyBtn = document.createElement("button") as HTMLButtonElement
+        verifyBtn.textContent = "Verify"
+        verifyDiv.appendChild(verifyBtn)
 
-        val verifyButton = document.createElement("button") as HTMLButtonElement
-        verifyButton.textContent = "Verify Email"
-        verifyDiv.appendChild(verifyButton)
-        println("[DEBUG_LOG] Verification section added")
+        // List Section
+        val listDiv = document.createElement("div") as HTMLDivElement
+        listDiv.style.display = "none"
+        container.appendChild(listDiv)
 
-        // Will Section
-        val willDiv = document.createElement("div") as HTMLDivElement
-        willDiv.style.marginTop = "20px"
-        willDiv.style.display = "none"
-        container.appendChild(willDiv)
+        // Editor Section
+        val editorDiv = document.createElement("div") as HTMLDivElement
+        editorDiv.style.display = "none"
+        container.appendChild(editorDiv)
 
-        val willTitle = document.createElement("h3")
-        willTitle.textContent = "Мое завещание"
-        willDiv.appendChild(willTitle)
+        val titleInput = document.createElement("input") as HTMLInputElement
+        titleInput.placeholder = "Заголовок"
+        titleInput.style.width = "100%"
+        titleInput.style.marginBottom = "10px"
+        editorDiv.appendChild(titleInput)
 
-        val willTextArea = document.createElement("textarea") as HTMLTextAreaElement
-        willTextArea.style.width = "400px"
-        willTextArea.style.height = "200px"
-        willTextArea.placeholder = "Напишите ваше послание здесь..."
-        willDiv.appendChild(willTextArea)
+        val contentArea = document.createElement("textarea") as HTMLTextAreaElement
+        contentArea.style.width = "100%"
+        contentArea.style.height = "300px"
+        editorDiv.appendChild(contentArea)
 
-        val saveWillButton = document.createElement("button") as HTMLButtonElement
-        saveWillButton.textContent = "Сохранить завещание"
-        willDiv.appendChild(saveWillButton)
+        val saveBtn = document.createElement("button") as HTMLButtonElement
+        saveBtn.textContent = "Сохранить"
+        editorDiv.appendChild(saveBtn)
 
-        val accessDiv = document.createElement("div") as HTMLDivElement
-        accessDiv.style.marginTop = "10px"
-        willDiv.appendChild(accessDiv)
+        val accessSection = document.createElement("div") as HTMLDivElement
+        accessSection.style.marginTop = "20px"
+        editorDiv.appendChild(accessSection)
 
         val accessInput = document.createElement("input") as HTMLInputElement
         accessInput.placeholder = "Email для доступа"
-        accessDiv.appendChild(accessInput)
+        accessSection.appendChild(accessInput)
 
-        val addAccessButton = document.createElement("button") as HTMLButtonElement
-        addAccessButton.textContent = "Дать доступ"
-        accessDiv.appendChild(addAccessButton)
+        val addAccessBtn = document.createElement("button") as HTMLButtonElement
+        addAccessBtn.textContent = "Дать доступ"
+        accessSection.appendChild(addAccessBtn)
 
-        val allowedEmailsDiv = document.createElement("div") as HTMLDivElement
-        willDiv.appendChild(allowedEmailsDiv)
-        println("[DEBUG_LOG] Will section added")
+        val allowedList = document.createElement("div") as HTMLDivElement
+        accessSection.appendChild(allowedList)
 
-        val resultDiv = document.createElement("div") as HTMLDivElement
-        resultDiv.style.marginTop = "20px"
-        resultDiv.style.border = "1px solid #ccc"
-        resultDiv.style.padding = "10px"
-        resultDiv.textContent = "Waiting for action..."
-        container.appendChild(resultDiv)
-        println("[DEBUG_LOG] Result div added")
+        // Status
+        val statusDiv = document.createElement("div") as HTMLDivElement
+        statusDiv.style.marginTop = "20px"
+        statusDiv.style.padding = "10px"
+        statusDiv.style.backgroundColor = "#f0f0f0"
+        container.appendChild(statusDiv)
 
-        fun updateWillUI(will: WillDto) {
-            willTextArea.value = will.content ?: ""
-            allowedEmailsDiv.textContent = "Доступ разрешен для: ${will.allowedEmails.joinToString(", ")}"
-            willDiv.style.display = "block"
-            formDiv.style.display = "none"
-            verifyDiv.style.display = "none"
-            resultDiv.style.display = "none"
+        var currentWillId: Long? = null
+        var isSharedMode = false
+
+        fun showSection(section: String) {
+            authDiv.style.display = if (section == "auth") "block" else "none"
+            verifyDiv.style.display = if (section == "verify") "block" else "none"
+            listDiv.style.display = if (section == "list") "block" else "none"
+            editorDiv.style.display = if (section == "editor") "block" else "none"
+            navDiv.style.display = if (section != "auth" && section != "verify") "block" else "none"
+            
+            // Clear status message when switching sections to avoid "Saved" hanging around
+            statusDiv.textContent = ""
+            statusDiv.style.color = "black"
         }
 
-        registerButton.addEventListener("click", {
-            val email = emailInput.value
-            val password = passwordInput.value
-            resultDiv.textContent = "Registering..."
-            GlobalScope.launch {
-                try {
-                    val response = apiClient.register(AuthRequest(email, password))
-                    resultDiv.textContent = "Register Response: ${response.success} - ${response.message}"
-                    if (response.success) {
-                        verifyDiv.style.display = "block"
-                    }
-                } catch (e: Exception) {
-                    resultDiv.textContent = "Error: ${e.message}"
-                }
-            }
-        })
-
-        verifyButton.addEventListener("click", {
-            val email = emailInput.value
-            val code = codeInput.value
-            resultDiv.textContent = "Verifying..."
-            GlobalScope.launch {
-                try {
-                    val response = apiClient.verify(VerifyRequest(email, code))
-                    resultDiv.textContent = "Verify Response: ${response.success} - ${response.message}"
-                    if (response.success) {
-                        verifyDiv.style.display = "none"
-                    }
-                } catch (e: Exception) {
-                    resultDiv.textContent = "Error: ${e.message}"
-                }
-            }
-        })
-
-        loginButton.addEventListener("click", {
-            val email = emailInput.value
-            val password = passwordInput.value
-            resultDiv.style.display = "block"
-            resultDiv.textContent = "Logging in..."
-            GlobalScope.launch {
-                try {
-                    val response = apiClient.login(AuthRequest(email, password))
-                    println("[DEBUG_LOG] Login response: $response")
-                    if (response.success) {
-                        // Immediately transition to Will screen
-                        formDiv.style.display = "none"
-                        verifyDiv.style.display = "none"
-                        resultDiv.style.display = "none"
-                        willDiv.style.display = "block"
-                        
-                        println("[DEBUG_LOG] Fetching will...")
-                        try {
-                            val will = apiClient.getWill()
-                            if (will != null) {
-                                updateWillUI(will)
-                            } else {
-                                println("[DEBUG_LOG] No will found for user, showing empty editor")
-                            }
-                        } catch (e: Exception) {
-                            println("[ERROR_LOG] Error fetching will after login: ${e.message}")
-                            resultDiv.style.display = "block"
-                            resultDiv.textContent = "Login successful, but failed to fetch will: ${e.message}"
-                        }
-                    } else {
-                        resultDiv.textContent = "Login Response: ${response.success} - ${response.message}"
-                        if (response.message.contains("verify")) {
-                            verifyDiv.style.display = "block"
+        suspend fun loadMyWills() {
+            showSection("list")
+            isSharedMode = false
+            listDiv.innerHTML = "<h3>Мои завещания</h3>"
+            val wills = apiClient.getMyWills()
+            if (wills.isEmpty()) {
+                listDiv.innerHTML += "<p>У вас еще нет завещаний.</p>"
+            } else {
+                wills.forEach { will ->
+                    val item = document.createElement("div") as HTMLDivElement
+                    item.style.padding = "10px"
+                    item.style.border = "1px solid #eee"
+                    item.style.marginBottom = "5px"
+                    item.style.cursor = "pointer"
+                    item.innerHTML = "<b>${will.title}</b>"
+                    item.onclick = {
+                        GlobalScope.launch {
+                            currentWillId = will.id
+                            titleInput.value = will.title
+                            contentArea.value = will.content
+                            titleInput.disabled = false
+                            contentArea.disabled = false
+                            saveBtn.style.display = "inline-block"
+                            accessSection.style.display = "block"
+                            allowedList.textContent = "Доступ: ${will.allowedEmails.joinToString()}"
+                            showSection("editor")
                         }
                     }
-                } catch (e: Exception) {
-                    println("[ERROR_LOG] Login error: ${e.message}")
-                    resultDiv.textContent = "Error: ${e.message}"
+                    listDiv.appendChild(item)
                 }
             }
-        })
+        }
 
-        saveWillButton.addEventListener("click", {
-            val content = willTextArea.value
+        suspend fun loadSharedWills() {
+            showSection("list")
+            isSharedMode = true
+            listDiv.innerHTML = "<h3>Доступные мне завещания</h3>"
+            val wills = apiClient.getSharedWills()
+            if (wills.isEmpty()) {
+                listDiv.innerHTML += "<p>Вам пока ничего не открыли.</p>"
+            } else {
+                wills.forEach { will ->
+                    val item = document.createElement("div") as HTMLDivElement
+                    item.style.padding = "10px"
+                    item.style.border = "1px solid #eee"
+                    item.style.marginBottom = "5px"
+                    item.style.cursor = "pointer"
+                    item.innerHTML = "<b>${will.title}</b> (от ${will.ownerEmail})"
+                    item.onclick = {
+                        GlobalScope.launch {
+                            currentWillId = will.id
+                            titleInput.value = will.title
+                            contentArea.value = will.content
+                            titleInput.disabled = true
+                            contentArea.disabled = true
+                            saveBtn.style.display = "none"
+                            accessSection.style.display = "none"
+                            showSection("editor")
+                        }
+                    }
+                    listDiv.appendChild(item)
+                }
+            }
+        }
+
+        loginButton.onclick = {
             GlobalScope.launch {
-                val updatedWill = apiClient.updateWill(UpdateWillRequest(content))
-                if (updatedWill != null) {
-                    updateWillUI(updatedWill)
-                    resultDiv.textContent = "Завещание сохранено"
+                statusDiv.textContent = "Logging in..."
+                val res = apiClient.login(AuthRequest(emailInput.value, passwordInput.value))
+                if (res.success) {
+                    statusDiv.textContent = "Logged in"
+                    loadMyWills()
+                } else {
+                    statusDiv.textContent = res.message
+                    if (res.message.contains("verify")) showSection("verify")
                 }
             }
-        })
+        }
 
-        addAccessButton.addEventListener("click", {
-            val email = accessInput.value
+        registerButton.onclick = {
             GlobalScope.launch {
-                val updatedWill = apiClient.addAccess(AddAccessRequest(email))
-                if (updatedWill != null) {
-                    updateWillUI(updatedWill)
-                    accessInput.value = ""
-                    resultDiv.textContent = "Доступ добавлен"
+                statusDiv.textContent = "Registering..."
+                val res = apiClient.register(AuthRequest(emailInput.value, passwordInput.value))
+                statusDiv.textContent = res.message
+                if (res.success) showSection("verify")
+            }
+        }
+
+        verifyBtn.onclick = {
+            GlobalScope.launch {
+                val res = apiClient.verify(VerifyRequest(emailInput.value, codeInput.value))
+                statusDiv.textContent = res.message
+                if (res.success) showSection("auth")
+            }
+        }
+
+        myWillsBtn.onclick = { GlobalScope.launch { loadMyWills() } }
+        sharedWillsBtn.onclick = { GlobalScope.launch { loadSharedWills() } }
+        createWillNavBtn.onclick = {
+            currentWillId = null
+            titleInput.value = ""
+            contentArea.value = ""
+            titleInput.disabled = false
+            contentArea.disabled = false
+            saveBtn.style.display = "inline-block"
+            accessSection.style.display = "none"
+            showSection("editor")
+        }
+
+        saveBtn.onclick = {
+            GlobalScope.launch {
+                val title = titleInput.value.trim()
+                if (title.isEmpty()) {
+                    statusDiv.textContent = "Ошибка: Заголовок обязателен!"
+                    statusDiv.style.color = "red"
+                    return@launch
+                }
+                statusDiv.style.color = "black"
+                statusDiv.textContent = "Saving..."
+                val id = currentWillId
+                val res = if (id == null) {
+                    apiClient.createWill(CreateWillRequest(title, contentArea.value))
+                } else {
+                    apiClient.updateWill(id, UpdateWillRequest(title, contentArea.value))
+                }
+                if (res != null) {
+                    statusDiv.textContent = "Saved"
+                    currentWillId = res.id
+                    accessSection.style.display = "block"
+                    allowedList.textContent = "Доступ: ${res.allowedEmails.joinToString()}"
+                } else {
+                    statusDiv.textContent = "Error saving"
                 }
             }
-        })
+        }
 
-        println("[DEBUG_LOG] Client JS UI initialized")
+        addAccessBtn.onclick = {
+            val id = currentWillId
+            if (id != null) {
+                GlobalScope.launch {
+                    val res = apiClient.addAccess(id, AddAccessRequest(accessInput.value))
+                    if (res != null) {
+                        allowedList.textContent = "Доступ: ${res.allowedEmails.joinToString()}"
+                        accessInput.value = ""
+                    }
+                }
+            }
+        }
+
     } catch (e: Throwable) {
         println("[ERROR_LOG] Error during Main initialization: ${e.message}")
-        val stack = e.asDynamic().stack
-        if (stack != null) {
-            println("[ERROR_LOG] Stack: $stack")
-        }
     }
 }

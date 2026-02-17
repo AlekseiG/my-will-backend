@@ -24,12 +24,21 @@ data class VerifyRequest(
 @Serializable
 data class WillDto(
     val id: Long? = null,
+    val title: String = "",
     val content: String = "",
+    val ownerEmail: String = "",
     val allowedEmails: Set<String> = emptySet()
 )
 
 @Serializable
+data class CreateWillRequest(
+    val title: String,
+    val content: String
+)
+
+@Serializable
 data class UpdateWillRequest(
+    val title: String,
     val content: String
 )
 

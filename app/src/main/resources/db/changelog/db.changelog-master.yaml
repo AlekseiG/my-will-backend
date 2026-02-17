@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changes/003-user-verification.yaml
   - include:
       file: db/changelog/changes/004-wills-table.yaml
+  - include:
+      file: db/changelog/changes/005-add-will-title.yaml

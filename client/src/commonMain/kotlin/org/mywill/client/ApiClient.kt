@@ -92,9 +92,35 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
-    suspend fun getWill(): WillDto? {
+    suspend fun getMyWills(): List<WillDto> {
         return try {
             val response: HttpResponse = client.get("$baseUrl/api/will") {
+                withCredentials()
+            }
+            if (response.status == HttpStatusCode.OK) {
+                Json.decodeFromString<List<WillDto>>(response.bodyAsText())
+            } else emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getSharedWills(): List<WillDto> {
+        return try {
+            val response: HttpResponse = client.get("$baseUrl/api/will/shared") {
+                withCredentials()
+            }
+            if (response.status == HttpStatusCode.OK) {
+                Json.decodeFromString<List<WillDto>>(response.bodyAsText())
+            } else emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun getWill(id: Long): WillDto? {
+        return try {
+            val response: HttpResponse = client.get("$baseUrl/api/will/$id") {
                 withCredentials()
             }
             if (response.status == HttpStatusCode.OK) {
@@ -105,7 +131,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
-    suspend fun updateWill(request: UpdateWillRequest): WillDto? {
+    suspend fun createWill(request: CreateWillRequest): WillDto? {
         return try {
             val response: HttpResponse = client.post("$baseUrl/api/will") {
                 contentType(ContentType.Application.Json)
@@ -118,9 +144,22 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
-    suspend fun addAccess(request: AddAccessRequest): WillDto? {
+    suspend fun updateWill(id: Long, request: UpdateWillRequest): WillDto? {
         return try {
-            val response: HttpResponse = client.post("$baseUrl/api/will/access") {
+            val response: HttpResponse = client.put("$baseUrl/api/will/$id") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+                withCredentials()
+            }
+            Json.decodeFromString<WillDto>(response.bodyAsText())
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun addAccess(id: Long, request: AddAccessRequest): WillDto? {
+        return try {
+            val response: HttpResponse = client.post("$baseUrl/api/will/$id/access") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
                 withCredentials()

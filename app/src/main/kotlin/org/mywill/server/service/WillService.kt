@@ -14,27 +14,53 @@ class WillService(
 ) {
 
     @Transactional(readOnly = true)
-    fun getWill(userEmail: String): WillDto? {
-        val user = userRepository.findByEmail(userEmail) ?: return null
-        val will = willRepository.findByOwner(user) ?: return null
-        return WillDto(will.id, will.content, will.allowedEmails)
+    fun getMyWills(userEmail: String): List<WillDto> {
+        val user = userRepository.findByEmail(userEmail) ?: return emptyList()
+        return willRepository.findByOwner(user).map { it.toDto() }
+    }
+
+    @Transactional(readOnly = true)
+    fun getSharedWills(userEmail: String): List<WillDto> {
+        return willRepository.findAllByAllowedEmail(userEmail).map { it.toDto() }
+    }
+
+    @Transactional(readOnly = true)
+    fun getWill(id: Long, userEmail: String): WillDto? {
+        val will = willRepository.findById(id).orElse(null) ?: return null
+        if (will.owner.email != userEmail && !will.allowedEmails.contains(userEmail)) {
+            throw RuntimeException("Access denied")
+        }
+        return will.toDto()
     }
 
     @Transactional
-    fun updateWillContent(userEmail: String, content: String): WillDto {
+    fun createWill(userEmail: String, title: String, content: String): WillDto {
         val user = userRepository.findByEmail(userEmail) ?: throw RuntimeException("User not found")
-        val will = willRepository.findByOwner(user) ?: Will(owner = user, content = content)
+        val will = Will(owner = user, title = title, content = content)
+        val savedWill = willRepository.save(will)
+        return savedWill.toDto()
+    }
+
+    @Transactional
+    fun updateWill(id: Long, userEmail: String, title: String, content: String): WillDto {
+        val will = willRepository.findById(id).orElseThrow { RuntimeException("Will not found") }
+        if (will.owner.email != userEmail) {
+            throw RuntimeException("Only owner can update will")
+        }
+        will.title = title
         will.content = content
-        val savedWill = willRepository.save(will)
-        return WillDto(savedWill.id, savedWill.content, savedWill.allowedEmails)
+        return willRepository.save(will).toDto()
     }
 
     @Transactional
-    fun addAllowedEmail(userEmail: String, emailToAdd: String): WillDto {
-        val user = userRepository.findByEmail(userEmail) ?: throw RuntimeException("User not found")
-        val will = willRepository.findByOwner(user) ?: throw RuntimeException("Will not found. Create it first.")
+    fun addAllowedEmail(id: Long, userEmail: String, emailToAdd: String): WillDto {
+        val will = willRepository.findById(id).orElseThrow { RuntimeException("Will not found") }
+        if (will.owner.email != userEmail) {
+            throw RuntimeException("Only owner can add access")
+        }
         will.allowedEmails.add(emailToAdd)
-        val savedWill = willRepository.save(will)
-        return WillDto(savedWill.id, savedWill.content, savedWill.allowedEmails)
+        return willRepository.save(will).toDto()
     }
+
+    private fun Will.toDto() = WillDto(id, title, content, owner.email, allowedEmails)
 }

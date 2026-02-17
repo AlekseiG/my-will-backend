@@ -2,10 +2,7 @@ package org.mywill.server
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
-import org.mywill.server.controller.dto.AddAccessRequest
-import org.mywill.server.controller.dto.AuthRequest
-import org.mywill.server.controller.dto.UpdateWillRequest
-import org.mywill.server.controller.dto.VerifyRequest
+import org.mywill.server.controller.dto.*
 import org.mywill.server.repository.UserRepository
 import org.mywill.server.service.EmailService
 import org.springframework.beans.factory.annotation.Autowired
@@ -60,52 +57,67 @@ class WillControllerTest {
             content = objectMapper.writeValueAsString(VerifyRequest(email, code))
         }
 
-        // 2. Логин и получение сессии
+        // 2. Логин и получение токена
         val loginResponse = mvc.post("/auth/login") {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(AuthRequest(email, password))
-        }.andDo { print() }.andExpect {
+        }.andExpect {
             status { isOk() }
             jsonPath("$.success") { value(true) }
         }.andReturn()
         
         val token = objectMapper.readTree(loginResponse.response.contentAsString).get("token").asText()
 
-        // 3. Получение завещания (должно быть 404, так как еще не создано)
+        // 3. Получение списка своих завещаний (пустой)
         mvc.get("/api/will") {
             header("Authorization", "Bearer $token")
         }.andExpect {
-            status { isNotFound() }
+            status { isOk() }
+            jsonPath("$.length()") { value(0) }
         }
 
-        // 4. Создание/обновление завещания
-        val willContent = "Это мое завещание.\n1. Кота оставить соседу.\n2. Книги в библиотеку."
+        // 4. Создание первого завещания
+        val title1 = "Завещание 1"
+        val content1 = "Контент 1"
+        val createResponse1 = mvc.post("/api/will") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(CreateWillRequest(title1, content1))
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.title") { value(title1) }
+        }.andReturn()
+        val will1Id = objectMapper.readTree(createResponse1.response.contentAsString).get("id").asLong()
+
+        // 5. Создание второго завещания
+        val title2 = "Завещание 2"
+        val content2 = "Контент 2"
         mvc.post("/api/will") {
             header("Authorization", "Bearer $token")
             contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(UpdateWillRequest(willContent))
+            content = objectMapper.writeValueAsString(CreateWillRequest(title2, content2))
         }.andExpect {
             status { isOk() }
-            jsonPath("$.content") { value(willContent) }
+            jsonPath("$.title") { value(title2) }
         }
 
-        // 5. Получение завещания снова
+        // 6. Получение списка своих завещаний (2 штуки)
         mvc.get("/api/will") {
             header("Authorization", "Bearer $token")
-        }.andDo { print() }.andExpect {
-            status { isOk() }
-            jsonPath("$.content") { value(willContent) }
-        }
-
-        // 6. Добавление доступа
-        val accessEmail = "friend@example.com"
-        mvc.post("/api/will/access") {
-            header("Authorization", "Bearer $token")
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(AddAccessRequest(accessEmail))
         }.andExpect {
             status { isOk() }
-            jsonPath("$.allowedEmails[0]") { value(accessEmail) }
+            jsonPath("$.length()") { value(2) }
+        }
+
+        // 7. Добавление доступа к первому завещанию
+        val friendEmail = "friend@example.com"
+        mvc.post("/api/will/$will1Id/access") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(AddAccessRequest(friendEmail))
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.allowedEmails[0]") { value(friendEmail) }
         }
     }
 

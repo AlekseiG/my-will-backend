@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5
+      author: junie
+      changes:
+        - addColumn:
+            tableName: wills
+            columns:
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
