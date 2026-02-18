@@ -1,6 +1,8 @@
 plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
+    id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 kotlin {
@@ -10,17 +12,22 @@ kotlin {
             mainClass.set("org.mywill.client.MainKt")
         }
     }
+    @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl::class)
     js(IR) {
+        moduleName = "client"
         browser {
             commonWebpackConfig {
                 cssSupport {
                     enabled = true
                 }
             }
+            distribution {
+                outputDirectory.set(file("$projectDir/build/dist/js/productionExecutable"))
+            }
         }
         binaries.executable()
     }
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -29,6 +36,14 @@ kotlin {
                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                
+                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
+                implementation(compose.runtime)
+                implementation(compose.foundation)
+                implementation(compose.material3)
+                implementation(compose.ui)
+                implementation(compose.components.resources)
+                implementation(compose.components.uiToolingPreview)
             }
         }
         val commonTest by getting {
@@ -42,8 +57,22 @@ kotlin {
             }
         }
         val jsMain by getting {
+            resources.srcDir("src/jsMain/resources")
             dependencies {
                 implementation("io.ktor:ktor-client-js:3.0.3")
+            }
+        }
+    }
+
+    tasks.named<ProcessResources>("jsProcessResources") {
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    }
+
+    tasks.named("jsBrowserProductionWebpack") {
+        doLast {
+            copy {
+                from("src/jsMain/resources/index.html")
+                into("$projectDir/build/dist/js/productionExecutable")
             }
         }
     }

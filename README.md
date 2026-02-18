@@ -42,13 +42,14 @@ google:
 ### 3. Запуск клиента (client)
 Клиентская часть реализована на Kotlin Multiplatform с общей бизнес-логикой в `commonMain`.
 
-#### Общая архитектура (AppController)
-Для унификации логики между Web и Android используется `AppController` из модуля `:client`. Он инкапсулирует:
-- Работу с `ApiClient` (авторизация, запросы к API).
-- Ведение состояния `AppState` (текущие завещания, статус авторизации).
-- Обработку ошибок и асинхронность.
+#### Shared Architecture (Compose Multiplatform)
+To eliminate code duplication, both business logic and UI are implemented once in the `:client` module (`commonMain`) using **Compose Multiplatform**.
 
-Это позволяет переиспользовать 100% кода сетевого взаимодействия и бизнес-правил на обеих платформах.
+- **Shared UI**: The entire user interface (Auth, List, Editor) is written in Kotlin using Compose and shared between Android and Web.
+- **AppController**: Encapsulates `ApiClient` calls, `AppState` management, and error handling.
+- **Platform Shells**: Android and Web projects are now minimal "shells" that just initialize the platform-specific `ApiClient` and launch the shared `App` component.
+
+This approach ensures 100% logic and UI reuse, identical behavior, and unified error messages across all platforms.
 
 #### Сборка и запуск JS клиента (Web)
 Для запуска в режиме разработки с автоматической перезагрузкой:
