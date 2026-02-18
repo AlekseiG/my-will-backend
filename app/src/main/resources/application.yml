@@ -39,13 +39,14 @@ spring:
           google:
             client-id: ${google.client-id}
             client-secret: ${google.client-secret}
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
               - email
               - profile
 
 app:
   # URL фронтенда, на который будет редирект после успешного OAuth2-логина
-  frontend-base-url: ${FRONTEND_BASE_URL:http://192.168.1.8:8081}
+  frontend-base-url: ${FRONTEND_BASE_URL:http://myappp.org:8081}
 
 logging:
   level:

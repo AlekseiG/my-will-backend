@@ -1,5 +1,7 @@
 package org.mywill.android
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,8 +25,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Обработка токена из Intent (deep link)
+        intent?.data?.let { uri ->
+            val token = uri.getQueryParameter("token")
+            if (token != null) {
+                controller.setToken(token)
+            }
+        }
+
         setContent {
-            App(controller)
+            App(controller, onGoogleLogin = {
+                val baseUrl = getString(R.string.backend_base_url)
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("$baseUrl/oauth2/authorization/google"))
+                startActivity(intent)
+            })
         }
     }
 }

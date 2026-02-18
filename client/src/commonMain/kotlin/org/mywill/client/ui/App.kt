@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import org.mywill.client.*
@@ -25,6 +26,14 @@ enum class Screen {
 @Composable
 fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
     var currentScreen by remember { mutableStateOf(Screen.Auth) }
+    
+    // Переходим на основной экран, если уже авторизованы (например, пришел токен из URL)
+    LaunchedEffect(controller.state.isAuthorized) {
+        if (controller.state.isAuthorized && currentScreen == Screen.Auth) {
+            currentScreen = Screen.List
+        }
+    }
+
     var isSharedMode by remember { mutableStateOf(false) }
     var currentWill by remember { mutableStateOf<WillDto?>(null) }
     
@@ -37,61 +46,70 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (currentScreen != Screen.Auth) {
-                NavigationBar {
-                    NavigationBarItem(
-                        selected = currentScreen == Screen.List && !isSharedMode,
-                        onClick = { 
-                            isSharedMode = false
-                            currentScreen = Screen.List 
-                        },
-                        icon = { Text("M") },
-                        label = { Text("Мои") }
-                    )
-                    NavigationBarItem(
-                        selected = currentScreen == Screen.List && isSharedMode,
-                        onClick = { 
-                            isSharedMode = true
-                            currentScreen = Screen.List 
-                        },
-                        icon = { Text("S") },
-                        label = { Text("Чужие") }
-                    )
-                    NavigationBarItem(
-                        selected = currentScreen == Screen.Editor && currentWill == null,
-                        onClick = { 
-                            currentWill = null
-                            currentScreen = Screen.Editor 
-                        },
-                        icon = { Text("+") },
-                        label = { Text("Новое") }
-                    )
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    NavigationBar(
+                        modifier = Modifier.widthIn(max = 600.dp).fillMaxWidth()
+                    ) {
+                        NavigationBarItem(
+                            selected = currentScreen == Screen.List && !isSharedMode,
+                            onClick = { 
+                                isSharedMode = false
+                                currentScreen = Screen.List 
+                            },
+                            icon = { Text("M") },
+                            label = { Text("Мои") }
+                        )
+                        NavigationBarItem(
+                            selected = currentScreen == Screen.List && isSharedMode,
+                            onClick = { 
+                                isSharedMode = true
+                                currentScreen = Screen.List 
+                            },
+                            icon = { Text("S") },
+                            label = { Text("Чужие") }
+                        )
+                        NavigationBarItem(
+                            selected = currentScreen == Screen.Editor && currentWill == null,
+                            onClick = { 
+                                currentWill = null
+                                currentScreen = Screen.Editor 
+                            },
+                            icon = { Text("+") },
+                            label = { Text("Новое") }
+                        )
+                    }
                 }
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            when (currentScreen) {
-                Screen.Auth -> AuthScreen(
-                    controller = controller,
-                    onLoginSuccess = { currentScreen = Screen.List },
-                    onGoogleLogin = onGoogleLogin,
-                    showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
-                )
-                Screen.List -> ListScreen(
-                    controller = controller,
-                    isSharedMode = isSharedMode,
-                    onWillClick = { will ->
-                        currentWill = will
-                        currentScreen = Screen.Editor
-                    }
-                )
-                Screen.Editor -> EditorScreen(
-                    controller = controller,
-                    will = currentWill,
-                    isReadOnly = isSharedMode && currentWill != null,
-                    onBack = { currentScreen = Screen.List },
-                    showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
-                )
+        Box(
+            modifier = Modifier.padding(padding).fillMaxSize(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Box(modifier = Modifier.widthIn(max = 600.dp).fillMaxWidth()) {
+                when (currentScreen) {
+                    Screen.Auth -> AuthScreen(
+                        controller = controller,
+                        onLoginSuccess = { currentScreen = Screen.List },
+                        onGoogleLogin = onGoogleLogin,
+                        showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
+                    )
+                    Screen.List -> ListScreen(
+                        controller = controller,
+                        isSharedMode = isSharedMode,
+                        onWillClick = { will ->
+                            currentWill = will
+                            currentScreen = Screen.Editor
+                        }
+                    )
+                    Screen.Editor -> EditorScreen(
+                        controller = controller,
+                        will = currentWill,
+                        isReadOnly = isSharedMode && currentWill != null,
+                        onBack = { currentScreen = Screen.List },
+                        showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
+                    )
+                }
             }
         }
     }
@@ -137,7 +155,8 @@ fun AuthScreen(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation()
             )
             Spacer(Modifier.height(16.dp))
 
