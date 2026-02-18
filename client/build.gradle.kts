@@ -14,7 +14,7 @@ kotlin {
     }
     @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl::class)
     js(IR) {
-        moduleName = "client"
+        compilerOptions.moduleName.set("client")
         browser {
             commonWebpackConfig {
                 cssSupport {

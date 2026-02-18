@@ -15,6 +15,13 @@ enum class Screen {
     Auth, List, Editor
 }
 
+/**
+ * Основной Composable-компонент приложения.
+ * Управляет навигацией между экранами и общим макетом (Scaffold).
+ * 
+ * @param controller Контроллер бизнес-логики.
+ * @param onGoogleLogin Callback для запуска Google OAuth2 (зависит от платформы).
+ */
 @Composable
 fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
     var currentScreen by remember { mutableStateOf(Screen.Auth) }
@@ -90,6 +97,10 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
     }
 }
 
+/**
+ * Экран авторизации.
+ * Поддерживает вход, регистрацию и верификацию через email.
+ */
 @Composable
 fun AuthScreen(
     controller: AppController,
@@ -134,6 +145,7 @@ fun AuthScreen(
                 onClick = {
                     scope.launch {
                         isLoading = true
+                        // Выбираем метод контроллера в зависимости от текущего режима (логин/регистрация)
                         val res = if (isRegistering) {
                             controller.register(email, password)
                         } else {
@@ -143,11 +155,14 @@ fun AuthScreen(
                         showSnackbar(res.message)
                         if (res.success) {
                             if (isRegistering) {
+                                // Если регистрация прошла успешно, переходим к вводу кода верификации
                                 isVerifying = true
                             } else {
+                                // Если вход успешен, переходим на экран списка
                                 onLoginSuccess()
                             }
                         } else if (res.message.contains("verify")) {
+                            // Если сервер сообщил, что нужна верификация (аккаунт еще не подтвержден)
                             isVerifying = true
                         }
                     }
@@ -205,6 +220,10 @@ fun AuthScreen(
     }
 }
 
+/**
+ * Экран со списком завещаний.
+ * Переключается между "Моими" и "Чужими" завещаниями.
+ */
 @Composable
 fun ListScreen(
     controller: AppController,
@@ -242,6 +261,10 @@ fun ListScreen(
     }
 }
 
+/**
+ * Экран редактора завещания.
+ * Позволяет просматривать, создавать и редактировать завещания, а также управлять доступом.
+ */
 @Composable
 fun EditorScreen(
     controller: AppController,

@@ -9,9 +9,18 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
+/**
+ * Клиент для взаимодействия с API бэкенда.
+ * Использует Ktor для выполнения HTTP-запросов и Kotlinx.serialization для JSON.
+ * 
+ * @param baseUrl Базовый URL API (по умолчанию http://localhost:8080).
+ */
 class ApiClient(private val baseUrl: String = "http://localhost:8080") {
     private var authToken: String? = null
 
+    /**
+     * Экземпляр HttpClient с настроенным ContentNegotiation (JSON) и поддержкой Cookies.
+     */
     private val client = try {
         println("[DEBUG_LOG] HttpClient initializing...")
         HttpClient {
@@ -28,6 +37,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         throw e
     }
 
+    /**
+     * Добавляет заголовок авторизации к запросу, если токен установлен.
+     */
     private fun HttpRequestBuilder.withCredentials() {
         header(HttpHeaders.AccessControlAllowCredentials, "true")
         authToken?.let {
@@ -35,11 +47,19 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Устанавливает токен авторизации вручную.
+     * Используется для OAuth2 или восстановления сессии.
+     */
     fun setToken(token: String) {
         authToken = token
         println("[DEBUG_LOG] Auth token manually set")
     }
 
+    /**
+     * Проверка связи с сервером.
+     * @return Текст ответа или сообщение об ошибке.
+     */
     suspend fun getHello(): String {
         return try {
             val response: HttpResponse = client.get("$baseUrl/") {
@@ -51,6 +71,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Регистрация нового пользователя.
+     */
     suspend fun register(authRequest: AuthRequest): AuthResponse {
         return try {
             val response: HttpResponse = client.post("$baseUrl/auth/register") {
@@ -64,6 +87,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Авторизация пользователя. При успехе сохраняет полученный токен.
+     */
     suspend fun login(authRequest: AuthRequest): AuthResponse {
         return try {
             val response: HttpResponse = client.post("$baseUrl/auth/login") {
@@ -82,6 +108,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Верификация аккаунта (подтверждение через код из email).
+     */
     suspend fun verify(verifyRequest: VerifyRequest): AuthResponse {
         return try {
             val response: HttpResponse = client.post("$baseUrl/auth/verify") {
@@ -95,6 +124,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Получение списка завещаний текущего пользователя.
+     */
     suspend fun getMyWills(): List<WillDto> {
         return try {
             val response: HttpResponse = client.get("$baseUrl/api/will") {
@@ -108,6 +140,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Получение списка завещаний, к которым пользователю предоставлен доступ.
+     */
     suspend fun getSharedWills(): List<WillDto> {
         return try {
             val response: HttpResponse = client.get("$baseUrl/api/will/shared") {
@@ -121,6 +156,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Получение конкретного завещания по ID.
+     */
     suspend fun getWill(id: Long): WillDto? {
         return try {
             val response: HttpResponse = client.get("$baseUrl/api/will/$id") {
@@ -134,6 +172,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Создание нового завещания.
+     */
     suspend fun createWill(request: CreateWillRequest): WillDto? {
         return try {
             val response: HttpResponse = client.post("$baseUrl/api/will") {
@@ -147,6 +188,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Обновление существующего завещания.
+     */
     suspend fun updateWill(id: Long, request: UpdateWillRequest): WillDto? {
         return try {
             val response: HttpResponse = client.put("$baseUrl/api/will/$id") {
@@ -160,6 +204,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Предоставление доступа к завещанию другому пользователю по email.
+     */
     suspend fun addAccess(id: Long, request: AddAccessRequest): WillDto? {
         return try {
             val response: HttpResponse = client.post("$baseUrl/api/will/$id/access") {
@@ -173,6 +220,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    /**
+     * Закрытие клиента и освобождение ресурсов.
+     */
     fun close() {
         client.close()
     }

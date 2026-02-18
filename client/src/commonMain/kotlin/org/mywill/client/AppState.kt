@@ -2,23 +2,42 @@ package org.mywill.client
 
 /**
  * Общее состояние клиентского приложения, доступное на всех платформах.
+ * Хранит данные об авторизации, сообщениях и списках завещаний.
  */
 class AppState {
+    /**
+     * Флаг авторизации. True, если у пользователя есть валидный токен.
+     */
     var isAuthorized: Boolean = false
         private set
 
+    /**
+     * Текущий JWT токен авторизации.
+     */
     var token: String? = null
         private set
 
+    /**
+     * Последнее сообщение от системы (текст ошибки или уведомление об успехе).
+     */
     var lastMessage: String? = null
         private set
 
+    /**
+     * Список завещаний, принадлежащих текущему пользователю.
+     */
     var myWills: List<WillDto> = emptyList()
         private set
 
+    /**
+     * Список завещаний, к которым предоставлен доступ текущему пользователю.
+     */
     var sharedWills: List<WillDto> = emptyList()
         private set
 
+    /**
+     * Устанавливает состояние авторизации и токен.
+     */
     fun setAuthorized(token: String?) {
         this.token = token
         this.isAuthorized = !token.isNullOrBlank()

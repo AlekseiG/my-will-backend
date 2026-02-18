@@ -20,18 +20,30 @@ class AppController(
         state.setAuthorized(token)
     }
 
+    /**
+     * Выполняет запрос к "приветственному" эндпоинту.
+     * @return Ответ от сервера.
+     */
     suspend fun getHello(): String = safeCall {
         api.getHello().also { msg ->
             state.setMessage(msg)
         }
     }
 
+    /**
+     * Регистрирует нового пользователя.
+     * @param email Email пользователя.
+     * @param password Пароль.
+     */
     suspend fun register(email: String, password: String): AuthResponse = safeCall {
         val resp = api.register(AuthRequest(email, password))
         state.setMessage(resp.message)
         resp
     }
 
+    /**
+     * Выполняет вход в систему. При успехе обновляет состояние авторизации.
+     */
     suspend fun login(email: String, password: String): AuthResponse = safeCall {
         val resp = api.login(AuthRequest(email, password))
         if (resp.success && resp.token != null) {
@@ -41,18 +53,27 @@ class AppController(
         resp
     }
 
+    /**
+     * Верифицирует аккаунт с помощью кода.
+     */
     suspend fun verify(email: String, code: String): AuthResponse = safeCall {
         val resp = api.verify(VerifyRequest(email, code))
         state.setMessage(resp.message)
         resp
     }
 
+    /**
+     * Загружает список собственных завещаний и обновляет [AppState].
+     */
     suspend fun loadMyWills(): List<WillDto> = safeCall {
         val list = api.getMyWills()
         state.setMyWills(list)
         list
     }
 
+    /**
+     * Загружает список чужих завещаний, к которым есть доступ, и обновляет [AppState].
+     */
     suspend fun loadSharedWills(): List<WillDto> = safeCall {
         val list = api.getSharedWills()
         state.setSharedWills(list)
@@ -75,6 +96,10 @@ class AppController(
         api.addAccess(id, AddAccessRequest(email))
     }
 
+    /**
+     * Безопасная обёртка для сетевых вызовов.
+     * Переключает контекст на Dispatchers.Default и ловит исключения, записывая их в состояние.
+     */
     private suspend fun <T> safeCall(block: suspend () -> T): T =
         withContext(Dispatchers.Default) { // нейтральный диспетчер для общей логики
             try {
