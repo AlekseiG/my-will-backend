@@ -24,6 +24,11 @@ kotlin {
                     enabled = true
                 }
             }
+            runTask {
+                devServerProperty.map {
+                    it.port = 8081
+                }
+            }
             distribution {
                 outputDirectory.set(file("$projectDir/build/dist/js/productionExecutable"))
             }

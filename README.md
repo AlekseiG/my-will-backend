@@ -56,7 +56,11 @@ google:
 ```bash
 ./gradlew :client:jsBrowserDevelopmentRun --continuous
 ```
-Интерфейс будет доступен по адресу `http://localhost:8081`.
+По умолчанию фронтенд открывается на `http://localhost:8081`. Для тестирования с внешних устройств (например, мобильного телефона в той же Wi‑Fi сети) рекомендуется запускать с указанием вашего локального IP (например, `192.168.1.8`):
+```bash
+./gradlew :client:jsBrowserDevelopmentRun
+```
+Убедитесь, что в `app/src/main/resources/application.yml` параметр `app.frontend-base-url` совпадает с адресом фронтенда (для `192.168.1.8` он уже настроен по умолчанию).
 
 Для сборки production версии:
 ```bash
