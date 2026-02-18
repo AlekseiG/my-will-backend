@@ -1,5 +1,6 @@
 package org.mywill.server.config
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -19,7 +20,9 @@ import org.springframework.security.web.servlet.util.matcher.PathPatternRequestM
 class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val jwtUtils: JwtUtils,
-    private val userRepository: org.mywill.server.repository.UserRepository
+    private val userRepository: org.mywill.server.repository.UserRepository,
+    @Value("\${app.frontend-base-url:http://localhost:8081}")
+    private val frontendBaseUrl: String
 ) {
 
     @Bean
@@ -46,7 +49,7 @@ class SecurityConfig(
                     .anyRequest().authenticated()
             }
             .oauth2Login { oauth2 ->
-                oauth2.loginPage("http://localhost:8081") // Указываем фронтенд как страницу логина
+                oauth2.loginPage(frontendBaseUrl) // Указываем фронтенд как страницу логина
                 oauth2.authorizationEndpoint { it.baseUri("/oauth2/authorization") }
                 oauth2.successHandler { _, response, authentication ->
                     val principal = authentication.principal as org.springframework.security.oauth2.core.user.OAuth2User
@@ -58,7 +61,7 @@ class SecurityConfig(
                     )
 
                     val token = jwtUtils.generateToken(user.email)
-                    response.sendRedirect("http://localhost:8081/#token=$token")
+                    response.sendRedirect("$frontendBaseUrl/#token=$token")
                 }
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)

@@ -42,6 +42,11 @@ spring:
             scope:
               - email
               - profile
+
+app:
+  # URL фронтенда, на который будет редирект после успешного OAuth2-логина
+  frontend-base-url: ${FRONTEND_BASE_URL:http://192.168.1.8:8081}
+
 logging:
   level:
     org.cryai: DEBUG

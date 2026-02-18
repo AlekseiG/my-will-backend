@@ -1,4 +1,5 @@
 package org.mywill.server
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.cloud.openfeign.EnableFeignClients
@@ -12,12 +13,16 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 @EnableJpaAuditing
 @EnableFeignClients
 class BotApplication {
+
+    @Value("\${app.frontend-base-url:http://localhost:8081}")
+    private lateinit var frontendBaseUrl: String
+
     @Bean
     fun corsConfigurer(): WebMvcConfigurer {
         return object : WebMvcConfigurer {
             override fun addCorsMappings(registry: CorsRegistry) {
                 registry.addMapping("/**")
-                    .allowedOrigins("http://localhost:8081")
+                    .allowedOrigins(frontendBaseUrl)
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                     .allowCredentials(true)
             }

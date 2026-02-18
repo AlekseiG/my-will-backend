@@ -14,9 +14,12 @@ import org.mywill.client.ui.App
 class MainActivity : ComponentActivity() {
     /**
      * Контроллер бизнес-логики.
-     * Используется специальный IP 10.0.2.2 для доступа к локальному серверу из эмулятора.
+     * Базовый URL берём из ресурсов (R.string.backend_base_url).
      */
-    private val controller = AppController(ApiClient("http://10.0.2.2:8080"))
+    private val controller by lazy {
+        val baseUrl = getString(R.string.backend_base_url)
+        AppController(ApiClient(baseUrl))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
