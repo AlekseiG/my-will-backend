@@ -124,7 +124,7 @@ class WillControllerTest {
     @Test
     fun testUnauthenticatedAccess() {
         mvc.get("/api/will").andExpect {
-            status { isForbidden() }
+            status { isUnauthorized() }
         }
     }
 }

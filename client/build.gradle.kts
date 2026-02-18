@@ -6,10 +6,13 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(25)
     jvm {
         mainRun {
             mainClass.set("org.mywill.client.MainKt")
+        }
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
     }
     @OptIn(org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalDistributionDsl::class)
@@ -31,11 +34,11 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-core:3.0.3")
-                implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                implementation("io.ktor:ktor-client-core:3.1.0")
+                implementation("io.ktor:ktor-client-content-negotiation:3.1.0")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
                 
                 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 implementation(compose.runtime)
@@ -53,13 +56,13 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-okhttp:3.0.3")
+                implementation("io.ktor:ktor-client-okhttp:3.1.0")
             }
         }
         val jsMain by getting {
             resources.srcDir("src/jsMain/resources")
             dependencies {
-                implementation("io.ktor:ktor-client-js:3.0.3")
+                implementation("io.ktor:ktor-client-js:3.1.0")
             }
         }
     }

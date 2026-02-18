@@ -8,7 +8,7 @@ plugins {
 }
 
 ext {
-    set("springCloudVersion", "2025.0.1")
+    set("springCloudVersion", "2025.0.0")
 }
 
 dependencyManagement {
@@ -29,7 +29,7 @@ dependencies {
     implementation("org.springframework.security:spring-security-oauth2-resource-server")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.liquibase:liquibase-core:4.33.0")
-    implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
+    implementation("io.github.oshai:kotlin-logging-jvm:7.0.4")
     implementation("org.bouncycastle:bcprov-jdk18on:1.80")
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
@@ -47,7 +47,7 @@ tasks.withType<Test> {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
