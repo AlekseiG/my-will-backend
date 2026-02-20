@@ -5,6 +5,7 @@ plugins {
     id("org.springframework.boot")
     id("io.spring.dependency-management")
     application
+    jacoco
 }
 
 ext {
@@ -47,8 +48,56 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+configure<JacocoPluginExtension> {
+    toolVersion = "0.8.14"
+}
+
+val jacocoExclusions = listOf(
+    "**/dto/**",
+    "**/entity/**",
+    "**/config/**",
+    "**/*Application*",
+    "**/AppKt*",
+    "**/*Exception*",
+    "**/repository/**",
+    "**/converter/**",
+    "**/config/**",
+    "**/security/**"
+)
+
 tasks.withType<Test> {
     useJUnitPlatform()
+    finalizedBy("jacocoTestReport")
+}
+
+val jacocoTestReport by tasks.getting(JacocoReport::class) {
+    dependsOn(tasks.test)
+    classDirectories.setFrom(
+        files("build/classes/kotlin/main").asFileTree.matching {
+            include("org/mywill/**")
+            exclude(jacocoExclusions)
+        }
+    )
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+    doLast {
+        println("\nJacoco HTML report: ${reports.html.outputLocation.get()}/index.html")
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(jacocoTestReport)
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = 0.0.toBigDecimal() // Порог 0% на старте — можно поднять позже
+            }
+        }
+    }
 }
 
 java {
