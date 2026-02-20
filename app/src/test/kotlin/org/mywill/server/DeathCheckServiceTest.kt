@@ -13,9 +13,8 @@ import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
-@SpringBootTest
 @ActiveProfiles("test")
-class DeathCheckServiceTest {
+class DeathCheckServiceTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var deathCheckService: DeathCheckService

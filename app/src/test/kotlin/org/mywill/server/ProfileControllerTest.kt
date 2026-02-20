@@ -27,11 +27,9 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
 
-@SpringBootTest
-@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-class ProfileControllerTest {
+class ProfileControllerTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var mvc: MockMvc

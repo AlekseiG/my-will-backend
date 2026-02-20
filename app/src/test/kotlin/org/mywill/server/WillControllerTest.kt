@@ -20,10 +20,8 @@ import org.mockito.Mockito.mock
 
 // Removed unused import
 
-@SpringBootTest
-@AutoConfigureMockMvc
 @ActiveProfiles("test")
-class WillControllerTest {
+class WillControllerTest : BaseIntegrationTest() {
 
     @TestConfiguration
     class TestConfig {

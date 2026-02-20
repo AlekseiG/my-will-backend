@@ -24,11 +24,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-@SpringBootTest
-@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-class TrustedPersonControllerTest {
+class TrustedPersonControllerTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var mvc: MockMvc

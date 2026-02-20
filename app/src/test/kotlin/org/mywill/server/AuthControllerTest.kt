@@ -20,10 +20,8 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import org.mockito.Mockito.mock
 
-@SpringBootTest
-@AutoConfigureMockMvc
 @ActiveProfiles("test")
-class AuthControllerTest {
+class AuthControllerTest : BaseIntegrationTest() {
 
     @TestConfiguration
     class TestConfig {
@@ -32,17 +30,17 @@ class AuthControllerTest {
         fun emailService(): EmailService = mock(EmailService::class.java)
     }
 
+@Autowired
+    private lateinit var userRepository: UserRepository
+
+    @Autowired
+    private lateinit var emailService: EmailService
+
     @Autowired
     private lateinit var mvc: MockMvc
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
-
-    @Autowired
-    private lateinit var userRepository: UserRepository
-
-    @Autowired
-    private lateinit var emailService: EmailService
 
     @org.junit.jupiter.api.BeforeEach
     fun setup() {
