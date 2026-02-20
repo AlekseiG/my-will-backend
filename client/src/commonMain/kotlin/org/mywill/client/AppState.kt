@@ -49,11 +49,11 @@ class AppState {
         this.lastMessage = message
     }
 
-    fun setMyWills(list: List<WillDto>) {
+    fun updateMyWills(list: List<WillDto>) {
         this.myWills = list
     }
 
-    fun setSharedWills(list: List<WillDto>) {
+    fun updateSharedWills(list: List<WillDto>) {
         this.sharedWills = list
     }
 }

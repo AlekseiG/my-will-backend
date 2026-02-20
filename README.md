@@ -2,6 +2,18 @@
 
 Проект состоит из серверной части на Spring Boot и клиентской части на Kotlin Multiplatform.
 
+## LLM Context / Архитектура
+Для быстрой ориентации LLM:
+- **Backend**: Spring Boot 3, Kotlin, JPA (PostgreSQL), Liquibase, Spring Security (JWT + Google OAuth2).
+  - `app`: Основной модуль бэкенда.
+  - `entity/User`: Модель пользователя. Поля `is_dead` и `death_confirmed_at` управляют доступом к завещаниям.
+  - `entity/TrustedPerson`: Список доверенных лиц. Если все доверенные ставят `confirmed_death = true`, включается таймер владельца.
+  - `service/DeathCheckService`: Планировщик (@Scheduled), который переводит `is_dead` в true по истечении таймаута после подтверждения.
+- **Frontend**: Kotlin Multiplatform (Compose Multiplatform), общий UI в модуле `client`.
+  - `AppController`: Единая точка входа для UI, управляет `ApiClient` и `AppState`.
+  - `AppState`: Реактивное состояние (Compose states) для всего приложения.
+
+
 ## Требования
 - JDK 25
 - PostgreSQL 14+ (или Docker)
@@ -93,6 +105,12 @@ google:
 3. **Логин**: Авторизуйтесь для доступа к редактору.
 4. **Редактор**: Напишите текст завещания и сохраните его.
 5. **Доступ**: Укажите email людей, которые смогут просматривать ваше завещание.
+### Бизнес-логика "Личный кабинет и Смерть"
+1. Пользователь добавляет "Доверенных людей" по email.
+2. Если все доверенные лица подтверждают факт смерти (через `/api/trusted-people/confirm-death`), у владельца проставляется `death_confirmed_at`.
+3. Включается "окно отмены" (`death_timeout_seconds` в профиле). В течение этого времени владелец может нажать "Я жив" (`/api/profile/cancel-death`), что сбросит все подтверждения.
+4. Если время вышло, `DeathCheckService` ставит `is_dead = true`.
+5. Только после `is_dead = true` другие пользователи (указанные в `allowed_emails` завещания) могут прочитать текст завещания.
 
 ## Тестирование
 Запуск всех тестов:

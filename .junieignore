@@ -1,0 +1,64 @@
+# Junie indexing/search ignore rules
+# Keep this focused: exclude heavy, generated, and irrelevant files/folders
+
+# VCS and IDE
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+*.iml
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Build outputs (Gradle/Kotlin/Android/Kotlin-JS)
+**/build/
+**/out/
+**/bin/
+**/.gradle/
+.gradle/
+
+# Gradle wrapper/cache artifacts that are large and not needed for reasoning
+gradle/wrapper/gradle-wrapper.jar
+
+# Android native build intermediates
+**/.cxx/
+**/.externalNativeBuild/
+
+# Node/Yarn/NPM artifacts
+node_modules/
+**/node_modules/
+# Lockfiles are large and rarely needed for reasoning
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Kotlin JS store and caches
+kotlin-js-store/
+
+# Logs and temporary files
+logs/
+*.log
+*.tmp
+tmp/
+.temp/
+.cache/
+
+# Local environment / secrets
+.env
+.env.*
+
+# Generated assets/bundles (adjust if you keep sources only)
+client/dist/
+client/.parcel-cache/
+client/.cache/
+
+# Test artifacts
+**/test-results/
+**/reports/
+
+# Misc
+*.swp
+*.swo

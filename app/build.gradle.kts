@@ -29,7 +29,10 @@ dependencies {
     implementation("org.springframework.security:spring-security-oauth2-resource-server")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.liquibase:liquibase-core:4.33.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5")
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.4")
+    implementation("net.javacrumbs.shedlock:shedlock-spring:6.2.0")
+    implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:6.2.0")
     implementation("org.bouncycastle:bcprov-jdk18on:1.80")
     implementation("io.jsonwebtoken:jjwt-api:0.12.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
@@ -38,6 +41,7 @@ dependencies {
     testImplementation("com.h2database:h2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.security:spring-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

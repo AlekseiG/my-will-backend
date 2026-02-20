@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import org.mywill.client.*
 
 enum class Screen {
-    Auth, List, Editor
+    Auth, List, Editor, Profile, Trusted
 }
 
 /**
@@ -77,6 +77,18 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
                             icon = { Text("+") },
                             label = { Text("Новое") }
                         )
+                        NavigationBarItem(
+                            selected = currentScreen == Screen.Profile,
+                            onClick = { currentScreen = Screen.Profile },
+                            icon = { Text("P") },
+                            label = { Text("Профиль") }
+                        )
+                        NavigationBarItem(
+                            selected = currentScreen == Screen.Trusted,
+                            onClick = { currentScreen = Screen.Trusted },
+                            icon = { Text("T") },
+                            label = { Text("Доверенные") }
+                        )
                     }
                 }
             }
@@ -107,6 +119,14 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
                         will = currentWill,
                         isReadOnly = isSharedMode && currentWill != null,
                         onBack = { currentScreen = Screen.List },
+                        showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
+                    )
+                    Screen.Profile -> ProfileScreen(
+                        controller = controller,
+                        showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
+                    )
+                    Screen.Trusted -> TrustedPeopleScreen(
+                        controller = controller,
                         showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
                     )
                 }
@@ -368,6 +388,198 @@ fun EditorScreen(
                     }
                 }
                 Text("Разрешено: ${allowedEmails.joinToString()}")
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileScreen(
+    controller: AppController,
+    showSnackbar: (String) -> Unit
+) {
+    var profile by remember { mutableStateOf<ProfileDto?>(null) }
+    var avatarUrl by remember { mutableStateOf("") }
+    var deathTimeout by remember { mutableStateOf("") }
+
+    var oldPass by remember { mutableStateOf("") }
+    var newPass by remember { mutableStateOf("") }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        profile = controller.loadProfile()
+        profile?.let {
+            avatarUrl = it.avatarUrl ?: ""
+            deathTimeout = it.deathTimeoutSeconds.toString()
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Профиль", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(16.dp))
+
+        TextField(
+            value = avatarUrl,
+            onValueChange = { avatarUrl = it },
+            label = { Text("URL аватарки") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        TextField(
+            value = deathTimeout,
+            onValueChange = { deathTimeout = it.filter { ch -> ch.isDigit() } },
+            label = { Text("Таймаут смерти (сек)") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = {
+            scope.launch {
+                val seconds = deathTimeout.toLongOrNull()
+                val updated = controller.updateProfile(
+                    avatarUrl.ifBlank { null },
+                    seconds
+                )
+                if (updated != null) {
+                    profile = updated
+                    showSnackbar("Профиль обновлён")
+                } else showSnackbar("Ошибка обновления профиля")
+            }
+        }, modifier = Modifier.fillMaxWidth()) {
+            Text("Сохранить профиль")
+        }
+
+        Spacer(Modifier.height(24.dp))
+        Text("Смена пароля", style = MaterialTheme.typography.titleMedium)
+        TextField(
+            value = oldPass,
+            onValueChange = { oldPass = it },
+            label = { Text("Старый пароль") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation()
+        )
+        Spacer(Modifier.height(8.dp))
+        TextField(
+            value = newPass,
+            onValueChange = { newPass = it },
+            label = { Text("Новый пароль") },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = PasswordVisualTransformation()
+        )
+        Spacer(Modifier.height(8.dp))
+        Button(onClick = {
+            scope.launch {
+                val ok = controller.changePassword(oldPass, newPass)
+                showSnackbar(if (ok) "Пароль обновлён" else "Ошибка смены пароля")
+                if (ok) { oldPass = ""; newPass = "" }
+            }
+        }, modifier = Modifier.fillMaxWidth()) {
+            Text("Сменить пароль")
+        }
+
+        Spacer(Modifier.height(24.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Button(onClick = {
+                scope.launch {
+                    val ok = controller.cancelDeath()
+                    showSnackbar(if (ok) "Подтверждение смерти отменено" else "Ошибка отмены")
+                }
+            }) { Text("Я жив") }
+            Spacer(Modifier.width(16.dp))
+            OutlinedButton(onClick = {
+                scope.launch {
+                    val ok = controller.deleteAccount()
+                    showSnackbar(if (ok) "Аккаунт удалён" else "Ошибка удаления")
+                }
+            }) { Text("Удалить аккаунт") }
+        }
+    }
+}
+
+@Composable
+fun TrustedPeopleScreen(
+    controller: AppController,
+    showSnackbar: (String) -> Unit
+) {
+    var trusted by remember { mutableStateOf(listOf<TrustedPersonDto>()) }
+    var newEmail by remember { mutableStateOf("") }
+    var owners by remember { mutableStateOf(listOf<String>()) }
+
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        trusted = controller.loadMyTrustedPeople()
+        owners = controller.loadWhoseTrustedIAm()
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text("Доверенные лица", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextField(
+                value = newEmail,
+                onValueChange = { newEmail = it },
+                label = { Text("Email доверенного") },
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(8.dp))
+            Button(onClick = {
+                scope.launch {
+                    val added = controller.addTrustedPerson(newEmail)
+                    if (added != null) {
+                        trusted = controller.loadMyTrustedPeople()
+                        newEmail = ""
+                        showSnackbar("Доверенное лицо добавлено")
+                    } else showSnackbar("Ошибка добавления")
+                }
+            }) { Text("Добавить") }
+        }
+        Spacer(Modifier.height(8.dp))
+        LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
+            items(trusted) { tp ->
+                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(tp.email, style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                if (tp.confirmedDeath) "Статус: подтвердил смерть" else "Статус: ожидается",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                        OutlinedButton(onClick = {
+                            scope.launch {
+                                val ok = controller.removeTrustedPerson(tp.id!!)
+                                if (ok) {
+                                    trusted = controller.loadMyTrustedPeople()
+                                    showSnackbar("Удалено")
+                                } else showSnackbar("Ошибка")
+                            }
+                        }) { Text("Удалить") }
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Text("Я доверенное лицо для:", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        if (owners.isEmpty()) {
+            Text("Вы не являетесь доверенным ни для кого")
+        } else {
+            LazyColumn {
+                items(owners) { owner ->
+                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(owner, modifier = Modifier.weight(1f))
+                            Button(onClick = {
+                                scope.launch {
+                                    val ok = controller.confirmDeath(owner)
+                                    showSnackbar(if (ok) "Подтверждение отправлено" else "Ошибка подтверждения")
+                                }
+                            }) { Text("Подтвердить смерть") }
+                        }
+                    }
+                }
             }
         }
     }

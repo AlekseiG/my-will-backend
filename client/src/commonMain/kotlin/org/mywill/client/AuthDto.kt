@@ -70,3 +70,41 @@ data class UpdateWillRequest(
 data class AddAccessRequest(
     val email: String
 )
+
+@Serializable
+data class ProfileDto(
+    val email: String,
+    val avatarUrl: String? = null,
+    val deathTimeoutSeconds: Long,
+    val isDead: Boolean,
+    val deathConfirmedAt: String? = null
+)
+
+@Serializable
+data class UpdateProfileRequest(
+    val avatarUrl: String? = null,
+    val deathTimeoutSeconds: Long? = null
+)
+
+@Serializable
+data class ChangePasswordRequest(
+    val oldPassword: String,
+    val newPassword: String
+)
+
+@Serializable
+data class TrustedPersonDto(
+    val id: Long? = null,
+    val email: String,
+    val confirmedDeath: Boolean
+)
+
+@Serializable
+data class AddTrustedPersonRequest(
+    val email: String
+)
+
+@Serializable
+data class DeathConfirmationRequest(
+    val ownerEmail: String
+)

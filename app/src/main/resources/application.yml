@@ -47,9 +47,9 @@ spring:
 app:
   # URL фронтенда, на который будет редирект после успешного OAuth2-логина
   frontend-base-url: ${FRONTEND_BASE_URL:http://myappp.org:8081}
+  death-check:
+    fixed-rate: 60000
 
 logging:
   level:
-    org.cryai: DEBUG
-    chat.giga: DEBUG
-    jdk.httpclient.HttpClient: DEBUG
+    org.mywill: TRACE

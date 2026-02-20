@@ -17,6 +17,10 @@ import kotlin.random.Random
 
 private val logger = KotlinLogging.logger {}
 
+/**
+ * Сервис для аутентификации и регистрации пользователей.
+ * Обрабатывает логику регистрации, верификации почты и входа в систему.
+ */
 @Service
 class AuthService(
     private val userRepository: UserRepository,
@@ -25,6 +29,11 @@ class AuthService(
     private val httpSession: HttpSession,
     private val jwtUtils: JwtUtils
 ) {
+    /**
+     * Регистрирует нового пользователя. Хеширует пароль и генерирует код верификации.
+     * @param request Объект с email и паролем.
+     * @return Ответ с результатом операции и сообщением.
+     */
     fun register(request: AuthRequest): AuthResponse {
         if (userRepository.findByEmail(request.email) != null) {
             return AuthResponse(false, "User already exists")
@@ -52,6 +61,11 @@ class AuthService(
         return AuthResponse(true, "Registration successful. Please check your email for the verification code.")
     }
 
+    /**
+     * Проверяет код верификации для пользователя.
+     * @param request Объект с email и кодом верификации.
+     * @return Ответ с результатом верификации.
+     */
     fun verify(request: VerifyRequest): AuthResponse {
         val user = userRepository.findByEmail(request.email)
             ?: return AuthResponse(false, "User not found")
@@ -70,6 +84,12 @@ class AuthService(
         return AuthResponse(false, "Invalid verification code")
     }
 
+    /**
+     * Аутентифицирует пользователя. Проверяет пароль и статус верификации.
+     * При успехе генерирует JWT токен и устанавливает контекст безопасности.
+     * @param request Объект с email и паролем.
+     * @return Ответ с JWT токеном при успешном входе.
+     */
     fun login(request: AuthRequest): AuthResponse {
         val user = userRepository.findByEmail(request.email)
             ?: return AuthResponse(false, "Invalid email or password")

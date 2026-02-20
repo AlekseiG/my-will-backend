@@ -11,3 +11,7 @@ databaseChangeLog:
       file: db/changelog/changes/005-add-will-title.yaml
   - include:
       file: db/changelog/changes/006-make-password-nullable.yaml
+  - include:
+      file: db/changelog/changes/007-trusted-people.yaml
+  - include:
+      file: db/changelog/changes/008-shedlock.yaml

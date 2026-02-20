@@ -220,6 +220,130 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         }
     }
 
+    suspend fun getProfile(): ProfileDto? {
+        return try {
+            val response: HttpResponse = client.get("$baseUrl/api/profile") {
+                withCredentials()
+            }
+            if (response.status == HttpStatusCode.OK) {
+                Json.decodeFromString<ProfileDto>(response.bodyAsText())
+            } else null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun updateProfile(request: UpdateProfileRequest): ProfileDto? {
+        return try {
+            val response: HttpResponse = client.patch("$baseUrl/api/profile") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+                withCredentials()
+            }
+            Json.decodeFromString<ProfileDto>(response.bodyAsText())
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun changePassword(request: ChangePasswordRequest): Boolean {
+        return try {
+            val response: HttpResponse = client.post("$baseUrl/api/profile/change-password") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+                withCredentials()
+            }
+            response.status == HttpStatusCode.OK
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun deleteAccount(): Boolean {
+        return try {
+            val response: HttpResponse = client.delete("$baseUrl/api/profile") {
+                withCredentials()
+            }
+            response.status == HttpStatusCode.OK
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun cancelDeath(): Boolean {
+        return try {
+            val response: HttpResponse = client.post("$baseUrl/api/profile/cancel-death") {
+                withCredentials()
+            }
+            response.status == HttpStatusCode.OK
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun getMyTrustedPeople(): List<TrustedPersonDto> {
+        return try {
+            val response: HttpResponse = client.get("$baseUrl/api/trusted-people") {
+                withCredentials()
+            }
+            if (response.status == HttpStatusCode.OK) {
+                Json.decodeFromString<List<TrustedPersonDto>>(response.bodyAsText())
+            } else emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun addTrustedPerson(request: AddTrustedPersonRequest): TrustedPersonDto? {
+        return try {
+            val response: HttpResponse = client.post("$baseUrl/api/trusted-people") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+                withCredentials()
+            }
+            Json.decodeFromString<TrustedPersonDto>(response.bodyAsText())
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    suspend fun removeTrustedPerson(id: Long): Boolean {
+        return try {
+            val response: HttpResponse = client.delete("$baseUrl/api/trusted-people/$id") {
+                withCredentials()
+            }
+            response.status == HttpStatusCode.OK
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun confirmDeath(request: DeathConfirmationRequest): Boolean {
+        return try {
+            val response: HttpResponse = client.post("$baseUrl/api/trusted-people/confirm-death") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+                withCredentials()
+            }
+            response.status == HttpStatusCode.OK
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun getWhoseTrustedIAm(): List<String> {
+        return try {
+            val response: HttpResponse = client.get("$baseUrl/api/trusted-people/whose-trusted-i-am") {
+                withCredentials()
+            }
+            if (response.status == HttpStatusCode.OK) {
+                Json.decodeFromString<List<String>>(response.bodyAsText())
+            } else emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
     /**
      * Закрытие клиента и освобождение ресурсов.
      */

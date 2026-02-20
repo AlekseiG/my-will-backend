@@ -6,12 +6,10 @@ spring:
     password:
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
-  liquibase:
-    enabled: false
 jwt:
   secret: "test-secret-key-that-is-long-enough-for-hmac-sha-256"
   expirationMs: 3600000
