@@ -9,18 +9,15 @@ import org.mywill.server.entity.User
 import org.mywill.server.repository.TrustedPersonRepository
 import org.mywill.server.repository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
-import org.springframework.test.web.servlet.delete
 import org.springframework.transaction.annotation.Transactional
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -93,7 +90,7 @@ class TrustedPersonControllerTest : BaseIntegrationTest() {
 
         val updatedOwner = userRepository.findByEmail(ownerEmail)!!
         assertNotNull(updatedOwner.deathConfirmedAt)
-        
+
         val updatedTp = trustedPersonRepository.findByOwnerAndEmail(owner, trustedEmail)!!
         assertTrue(updatedTp.confirmedDeath)
     }
@@ -110,5 +107,65 @@ class TrustedPersonControllerTest : BaseIntegrationTest() {
                 jsonPath("$.length()") { value(1) }
                 jsonPath("$[0]") { value(ownerEmail) }
             }
+    }
+
+    @Test
+    @WithMockUser(username = "owner@test.com")
+    fun testAddSelfAsTrustedPersonFails() {
+        val request = AddTrustedPersonRequest(email = "owner@test.com")
+        mvc.post("/api/trusted-people") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect {
+            status { isBadRequest() }
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "owner@test.com")
+    fun testRemoveTrustedPerson() {
+        val owner = userRepository.findByEmail("owner@test.com")!!
+        val tp =
+            trustedPersonRepository.save(org.mywill.server.entity.TrustedPerson(owner = owner, email = trustedEmail))
+
+        mvc.delete("/api/trusted-people/${tp.id}").andExpect {
+            status { isOk() }
+        }
+
+        assertTrue(trustedPersonRepository.findById(tp.id!!).isEmpty)
+    }
+
+    @Test
+    @WithMockUser(username = "someone@else.com")
+    fun testRemoveOthersTrustedPersonFails() {
+        val owner = userRepository.findByEmail(ownerEmail)!!
+        val tp =
+            trustedPersonRepository.save(org.mywill.server.entity.TrustedPerson(owner = owner, email = trustedEmail))
+
+        userRepository.save(User(email = "someone@else.com", verified = true))
+
+        mvc.delete("/api/trusted-people/${tp.id}").andExpect {
+            status { isForbidden() }
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "owner@test.com")
+    fun testRemoveNonExistentTrustedPersonFails() {
+        mvc.delete("/api/trusted-people/99999").andExpect {
+            status { isNotFound() }
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "not-trusted@test.com")
+    fun testConfirmDeathNotTrustedPerson() {
+        val request = DeathConfirmationRequest(ownerEmail = ownerEmail)
+        mvc.post("/api/trusted-people/confirm-death") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect {
+            status { isForbidden() }
+        }
     }
 }

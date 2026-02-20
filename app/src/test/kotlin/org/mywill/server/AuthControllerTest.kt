@@ -118,4 +118,68 @@ class AuthControllerTest : BaseIntegrationTest() {
             jsonPath("$.success") { value(false) }
         }
     }
+
+    @Test
+    fun testRegisterUserAlreadyExists() {
+        val email = "existing@example.com"
+        val request = AuthRequest(email, "password")
+        
+        mvc.post("/auth/register") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect { status { isOk() } }
+
+        mvc.post("/auth/register") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.success") { value(false) }
+            jsonPath("$.message") { value("User already exists") }
+        }
+    }
+
+    @Test
+    fun testVerifyUserNotFound() {
+        val request = VerifyRequest("nonexistent@example.com", "1234")
+        mvc.post("/auth/verify") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.success") { value(false) }
+            jsonPath("$.message") { value("User not found") }
+        }
+    }
+
+    @Test
+    fun testVerifyInvalidCode() {
+        val email = "verify-fail@example.com"
+        mvc.post("/auth/register") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(AuthRequest(email, "pass"))
+        }
+
+        mvc.post("/auth/verify") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(VerifyRequest(email, "wrong-code"))
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.success") { value(false) }
+            jsonPath("$.message") { value("Invalid verification code") }
+        }
+    }
+
+    @Test
+    fun testLoginNonExistentUser() {
+        val request = AuthRequest("nobody@example.com", "pass")
+        mvc.post("/auth/login") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(request)
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.success") { value(false) }
+            jsonPath("$.message") { value("Invalid email or password") }
+        }
+    }
 }
