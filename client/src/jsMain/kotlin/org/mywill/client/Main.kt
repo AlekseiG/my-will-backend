@@ -6,7 +6,6 @@ import kotlinx.browser.document
 import kotlinx.browser.window
 import org.jetbrains.skiko.wasm.onWasmReady
 import org.mywill.client.ui.App
-import org.w3c.dom.HTMLCanvasElement
 
 /**
  * Точка входа в Web-версию приложения (Kotlin/JS).
@@ -29,9 +28,9 @@ fun main() {
             }
         }
 
-        // Запуск Compose в Canvas-элементе с ID "ComposeTarget"
-        val canvas = document.getElementById("ComposeTarget") as HTMLCanvasElement
-        ComposeViewport(canvas) {
+        // Запуск Compose в контейнере с ID "ComposeTarget"
+        val container = document.getElementById("ComposeTarget")!!
+        ComposeViewport(container) {
             App(controller, onGoogleLogin = {
                 // Редирект на бэкенд для начала авторизации Google
                 window.location.href = "$backendOrigin/oauth2/authorization/google"
