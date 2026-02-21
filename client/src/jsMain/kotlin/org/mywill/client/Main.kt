@@ -1,10 +1,12 @@
 package org.mywill.client
 
 import androidx.compose.ui.ExperimentalComposeUiApi
-import org.jetbrains.skiko.wasm.onWasmReady
-import androidx.compose.ui.window.CanvasBasedWindow
-import org.mywill.client.ui.App
+import androidx.compose.ui.window.ComposeViewport
+import kotlinx.browser.document
 import kotlinx.browser.window
+import org.jetbrains.skiko.wasm.onWasmReady
+import org.mywill.client.ui.App
+import org.w3c.dom.HTMLCanvasElement
 
 /**
  * Точка входа в Web-версию приложения (Kotlin/JS).
@@ -28,7 +30,8 @@ fun main() {
         }
 
         // Запуск Compose в Canvas-элементе с ID "ComposeTarget"
-        CanvasBasedWindow("MyWill", canvasElementId = "ComposeTarget") {
+        val canvas = document.getElementById("ComposeTarget") as HTMLCanvasElement
+        ComposeViewport(canvas) {
             App(controller, onGoogleLogin = {
                 // Редирект на бэкенд для начала авторизации Google
                 window.location.href = "$backendOrigin/oauth2/authorization/google"

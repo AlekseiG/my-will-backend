@@ -37,37 +37,36 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
-                implementation("io.ktor:ktor-client-core:3.1.0")
-                implementation("io.ktor:ktor-client-content-negotiation:3.1.0")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:3.1.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-                
-                @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
-                implementation(compose.runtime)
-                implementation(compose.foundation)
-                implementation(compose.material3)
-                implementation(compose.ui)
-                implementation(compose.components.resources)
-                implementation(compose.components.uiToolingPreview)
+                implementation("io.ktor:ktor-client-core:3.4.0")
+                implementation("io.ktor:ktor-client-content-negotiation:3.4.0")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:3.4.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+
+                implementation("org.jetbrains.compose.runtime:runtime:1.10.1")
+                implementation("org.jetbrains.compose.foundation:foundation:1.10.1")
+                implementation("org.jetbrains.compose.ui:ui:1.10.1")
+                implementation("org.jetbrains.compose.material3:material3:1.9.0")
+                implementation("org.jetbrains.compose.components:components-resources:1.10.1")
+                implementation("org.jetbrains.compose.ui:ui-tooling-preview:1.10.1")
             }
         }
-        val commonTest by getting {
+        commonTest {
             dependencies {
                 implementation(kotlin("test"))
             }
         }
-        val jvmMain by getting {
+        jvmMain {
             dependencies {
-                implementation("io.ktor:ktor-client-okhttp:3.1.0")
+                implementation("io.ktor:ktor-client-okhttp:3.4.0")
             }
         }
-        val jsMain by getting {
+        jsMain {
             resources.srcDir("src/jsMain/resources")
             dependencies {
-                implementation("io.ktor:ktor-client-js:3.1.0")
+                implementation("io.ktor:ktor-client-js:3.4.0")
             }
         }
     }
