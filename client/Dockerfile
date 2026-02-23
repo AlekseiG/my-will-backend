@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Копируем gradle файлы
 COPY gradlew .
-COPY gradle gradle
+COPY gradle/ ./gradle/
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
 COPY gradle.properties .

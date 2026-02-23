@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Копируем gradle файлы для кеширования зависимостей
 COPY gradlew .
-COPY gradle gradle
+COPY gradle/ ./gradle/
 COPY build.gradle.kts .
 COPY settings.gradle.kts .
 COPY gradle.properties .
