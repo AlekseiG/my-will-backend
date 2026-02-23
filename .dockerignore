@@ -1,0 +1,12 @@
+# .dockerignore
+.gradle
+.idea
+build
+*/build
+kotlin-js-store
+node_modules
+.DS_Store
+gradlew
+gradlew.bat
+local.properties
+.git
