@@ -13,6 +13,65 @@
   - `AppController`: Единая точка входа для UI, управляет `ApiClient` и `AppState`.
   - `AppState`: Реактивное состояние (Compose states) для всего приложения.
 
+### Расширенный контекст для LLM (вся система целиком)
+
+- Слои бэкенда (`:app`):
+  - Входная точка: `org.mywill.server.App`.
+  - Контроллеры (REST):
+    - `org.mywill.server.controller.AuthController` — регистрация/логин/верификация; OAuth2 (Google).
+    - `org.mywill.server.controller.ProfileController` — профиль пользователя: таймаут отмены смерти, "Я жив" и т.п.
+    - `org.mywill.server.controller.WillController` — CRUD завещаний и доступ к их чтению.
+    - `org.mywill.server.controller.TrustedPersonController` — управление доверенными лицами и подтверждением смерти.
+  - Сервисы (бизнес-логика):
+    - `org.mywill.server.service.AuthService` — логика регистрации, входа, работы с кодами/токенами.
+    - `org.mywill.server.service.ProfileService` — операции с профилем и параметрами таймера.
+    - `org.mywill.server.service.WillService` — создание/обновление/чтение завещаний и проверка прав доступа.
+    - `org.mywill.server.service.TrustedPersonService` — добавление/удаление доверенных и подтверждение смерти.
+    - `org.mywill.server.service.DeathCheckService` — планировщик, который по `deathConfirmedAt + timeout` проставляет
+      `isDead = true`.
+    - `org.mywill.server.service.EmailService` — отправка сервисных писем (приглашения/коды и т.п.).
+  - Сущности (JPA):
+    - `org.mywill.server.entity.User` — пользователь; ключевые поля: `isDead`, `deathConfirmedAt`.
+    - `org.mywill.server.entity.Will` — завещание; содержит текст и список `allowedEmails`.
+    - `org.mywill.server.entity.TrustedPerson` — доверенное лицо: `email`, `confirmedDeath` и ссылка на владельца.
+  - Репозитории (Spring Data):
+    - `UserRepository`, `WillRepository`, `TrustedPersonRepository` в пакете `org.mywill.server.repository`.
+  - Безопасность и конфигурация:
+    - `org.mywill.server.config.SecurityConfig` — конфигурация Spring Security (JWT + OAuth2).
+    - `org.mywill.server.config.JwtAuthenticationFilter`, `org.mywill.server.config.JwtUtils` — извлечение/валидация
+      JWT.
+    - `org.mywill.server.config.ShedLockConfig` — конфигурация блокировок для планировщиков (если используется
+      распределённая среда).
+    - `org.mywill.server.config.converter.KotlinInstantConverter` — конвертер Kotlin `Instant` для Jackson.
+    - Миграции БД — Liquibase (`app/src/main/resources/db/changelog`).
+  - DTO и маппинг:
+    - Пакет `org.mywill.server.controller.dto` содержит DTO (`AuthDto`, `ProfileDto`, `WillDto`, `TrustedPersonDto`).
+    - Простейшие маппинги реализованы в сервисах/сущностях (см. `TrustedPerson.toDto()`).
+
+- Потоки данных (главные кейсы):
+  1) Авторизация через Google: `GET /oauth2/authorization/google` → коллбек → выдача JWT → фронт получает токен (см.
+     `client/.../Main.kt`, обработка `#token=`) → все дальнейшие REST-запросы с `Authorization: Bearer <JWT>`.
+  2) Подтверждение смерти: доверенные лица вызывают `POST /api/trusted-people/confirm-death` → при подтверждении всеми
+     ставится `deathConfirmedAt` → `DeathCheckService` по таймеру проставляет `isDead=true` → открывается чтение
+     завещаний для `allowedEmails`.
+  3) Редактирование завещания: владелец вызывает `WillController` (`create/update`) → текст хранится в `Will` и доступен
+     только владельцу до наступления `isDead=true`.
+
+- Фронтенд (`:client`):
+  - Входная точка Web: `org.mywill.client.Main` (Compose WASM/JS).
+  - `org.mywill.client.AppController` — хранит токен, инкапсулирует вызовы `ApiClient`, управляет состоянием.
+  - `org.mywill.client.ApiClient` — HTTP-клиент к бэкенду (авторизация, CRUD завещаний, доверенные лица, профиль).
+  - UI-компоненты: `org.mywill.client.ui.*` — экраны Авторизации, Списков/Деталей, Редактора завещаний (Compose МР).
+
+- Тесты:
+  - Интеграционные тесты контроллеров/сервисов: `app/src/test/kotlin/org/mywill/server/*Test.kt` (см.
+    `AuthControllerTest`, `WillControllerTest`, `DeathCheckServiceTest` и др.).
+
+Подсказки для LLM при навигации:
+
+- Если задача про REST/безопасность — смотрите `controller/*` и `config/*`.
+- Если про бизнес-логику — `service/*` и сущности в `entity/*` + соответствующие тесты.
+- Если про UI/клиента — `client/src/*/kotlin/org/mywill/client/*` (начиная с `Main.kt`, `AppController`, `ApiClient`).
 
 ## Требования
 - JDK 25
