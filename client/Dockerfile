@@ -9,8 +9,10 @@ COPY build.gradle.kts .
 COPY settings.gradle.kts .
 COPY gradle.properties .
 
-# Копируем исходники фронтенда
+# Копируем исходники фронтенда и необходимые модули для сборки всего проекта
+COPY app app
 COPY client client
+COPY androidApp androidApp
 
 # Собираем фронтенд (Kotlin JS)
 RUN chmod +x gradlew

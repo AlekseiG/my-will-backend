@@ -10,7 +10,10 @@ COPY settings.gradle.kts .
 COPY gradle.properties .
 
 # Копируем исходники модулей, необходимых для сборки бэкенда
+# В многомодульном Gradle проекте необходимо наличие всех включенных модулей для корректной оценки проекта
 COPY app app
+COPY client client
+COPY androidApp androidApp
 
 # Даем права на выполнение gradle и собираем бэкенд
 RUN chmod +x gradlew
