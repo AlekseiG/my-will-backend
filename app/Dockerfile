@@ -23,7 +23,8 @@ WORKDIR /app
 # Копируем собранный jar из этапа сборки
 COPY --from=build /app/app/build/libs/*.jar app.jar
 
-# AWS App Runner по умолчанию слушает порт 8080, но это настраиваемо
-EXPOSE 8080
+# Порт по умолчанию (Railway автоматически переопределяет его через переменную среды PORT)
+ENV PORT=8080
+EXPOSE ${PORT}
 
 ENTRYPOINT ["java", "-jar", "app.jar"]

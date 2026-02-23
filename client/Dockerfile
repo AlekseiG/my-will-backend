@@ -18,6 +18,8 @@ RUN ./gradlew :client:jsBrowserProductionWebpack --no-daemon
 
 # Этап раздачи статики
 FROM nginx:stable-alpine
+# Устанавливаем envsubst (из пакета gettext) для подстановки переменных окружения в конфиг Nginx
+RUN apk add --no-cache gettext
 WORKDIR /usr/share/nginx/html
 
 # Очищаем дефолтную папку nginx
@@ -27,16 +29,16 @@ RUN rm -rf ./*
 # Путь в соответствии с client/build.gradle.kts: outputDirectory.set(file("$projectDir/build/dist/js/productionExecutable"))
 COPY --from=build /app/client/build/dist/js/productionExecutable/ .
 
-# Настройка Nginx для SPA (перенаправление всех запросов на index.html если нужно)
+# Настройка Nginx для SPA и поддержка динамического порта через Railway
 RUN echo 'server { \
-    listen 80; \
+    listen ${PORT}; \
     location / { \
         root /usr/share/nginx/html; \
         index index.html; \
         try_files $uri $uri/ /index.html; \
     } \
-}' > /etc/nginx/conf.d/default.conf
+}' > /etc/nginx/conf.d/default.conf.template
 
-EXPOSE 80
+ENV PORT=80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["sh", "-c", "envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]

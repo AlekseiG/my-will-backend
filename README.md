@@ -190,7 +190,87 @@ google:
 ./gradlew :app:jacocoTestCoverageVerification
 ```
 
-## Развертывание (Docker & AWS App Runner)
+## Развертывание (Docker)
+
+### Образы
+
+Проект содержит два Docker-образа:
+
+- Бэкенд: `app/Dockerfile`
+- Фронтенд: `client/Dockerfile`
+
+Команды для локальной сборки из корня репозитория:
+
+```bash
+# Бэкенд
+docker build -t my-will-backend -f app/Dockerfile .
+
+# Фронтенд
+docker build -t my-will-frontend -f client/Dockerfile .
+```
+
+## Развертывание на Railway
+
+Railway позволяет развернуть оба сервиса (Backend и Frontend) из одного репозитория с отдельными Dockerfile.
+
+### 1) Backend (Spring Boot)
+
+- Тип развертывания: `Dockerfile`
+- Путь к Dockerfile: `app/Dockerfile`
+- Переменные окружения (в `Variables`):
+  - `SPRING_DATASOURCE_URL` — JDBC URL Railway PostgreSQL (напр. `jdbc:postgresql://<host>:<port>/<db>`)
+  - `SPRING_DATASOURCE_USERNAME` — пользователь БД
+  - `SPRING_DATASOURCE_PASSWORD` — пароль БД
+  - `SPRING_MAIL_USERNAME` — SMTP логин (например, Gmail)
+  - `SPRING_MAIL_PASSWORD` — SMTP пароль приложения
+  - `GOOGLE_CLIENT_ID` — OAuth2 Client ID
+  - `GOOGLE_CLIENT_SECRET` — OAuth2 Client Secret
+  - `JWT_SECRET` — секрет для подписания JWT (минимум 32 символа)
+  - `JWT_EXPIRATIONMS` — время жизни токена в миллисекундах (например, `86400000`)
+  - `FRONTEND_BASE_URL` — публичный URL фронтенда на Railway (например, `https://mywill-frontend.up.railway.app`)
+- Порт: Railway автоматически задаёт переменную `PORT`; приложение слушает её благодаря `server.port: ${PORT:8080}` в
+  конфигурации.
+- Миграции БД: запускаются автоматически через Liquibase при старте.
+
+### 2) Frontend (Nginx + статика)
+
+- Тип развертывания: `Dockerfile`
+- Путь к Dockerfile: `client/Dockerfile`
+- Порт: Railway передаёт переменную `PORT`; контейнер Nginx сконфигурирован использовать её автоматически.
+
+### 3) Подключение PostgreSQL
+
+- На Railway добавьте плагин PostgreSQL к сервису Backend (Tab `Add Plugin` → `PostgreSQL`).
+- Railway создаст переменные окружения для БД. Пропишите их в `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`,
+  `SPRING_DATASOURCE_PASSWORD` в сервисе Backend. Подсказка: URL из Railway формата
+  `postgresql://user:pass@host:port/db`; преобразуйте к JDBC-формату `jdbc:postgresql://host:port/db` и используйте
+  соответствующие `user`/`pass` отдельно.
+
+### 4) OAuth2 (Google)
+
+- В `Authorized redirect URIs` укажите адрес Backend на Railway:
+  `https://<backend>.up.railway.app/login/oauth2/code/google`.
+- В `Authorized JavaScript origins` добавьте адрес Frontend: `https://<frontend>.up.railway.app`.
+
+### 5) Домены и CORS
+
+- Если фронтенд и бэкенд на разных доменах Railway, убедитесь, что в настройках безопасности (если в проекте есть
+  CORS-конфигурация) разрешены запросы с домена фронтенда.
+- Переменная `FRONTEND_BASE_URL` в `application.yml` используется для редиректов после OAuth2 — установите её в
+  публичный URL фронтенда.
+
+### 6) Проверка
+
+- После деплоя Backend: откройте `https://<backend>.up.railway.app/actuator/health` (если Actuator включён) или главную
+  страницу API.
+- После деплоя Frontend: откройте `https://<frontend>.up.railway.app`.
+
+---
+
+### Примечание про AWS App Runner
+
+Ранее проект был подготовлен к AWS App Runner. Теперь основная инструкция — Railway. Docker-образы остаются совместимыми
+для любых провайдеров контейнеров.
 
 Проект подготовлен для развертывания в **AWS App Runner** с использованием Docker-контейнеров.
 
