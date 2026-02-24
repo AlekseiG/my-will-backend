@@ -30,7 +30,8 @@ RUN rm -rf ./*
 # Копируем собранные файлы фронтенда. Используем путь, явно указанный в client/build.gradle.kts
 COPY --from=build /app/client/build/dist/js/productionExecutable/ .
 
-# Отладочная команда для проверки состава файлов, todo delete it
+# Отладочная команда для проверки состава файлов (используем ARG для сброса кэша)
+ARG CACHEBUST=1
 RUN ls -R /usr/share/nginx/html
 
 # Настройка Nginx для SPA и поддержка динамического порта через Railway
