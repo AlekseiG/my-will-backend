@@ -39,7 +39,7 @@ RUN echo 'events { worker_connections 1024; } \
 http { \
     include /etc/nginx/mime.types; \
     server { \
-        listen ${PORT} default_server; \
+        listen __PORT__ default_server; \
         root /usr/share/nginx/html; \
         index index.html; \
         location / { \
@@ -51,4 +51,4 @@ http { \
 ENV PORT=8080
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "envsubst \"${PORT}\" < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && exec nginx -g \"daemon off;\""]
+CMD ["sh", "-c", "sed \"s/__PORT__/${PORT}/g\" /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && exec nginx -g \"daemon off;\""]
