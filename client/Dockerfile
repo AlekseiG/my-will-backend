@@ -41,14 +41,15 @@ RUN ls -R /usr/share/nginx/html
 
 # Настройка Nginx для SPA и поддержка динамического порта через Railway
 RUN echo 'server { \
-    listen ${PORT}; \
+    listen ${PORT} default_server; \
+    server_name _; \
+    root /usr/share/nginx/html; \
+    index index.html; \
     location / { \
-        root /usr/share/nginx/html; \
-        index index.html; \
         try_files $uri $uri/ /index.html; \
     } \
 }' > /etc/nginx/conf.d/default.conf.template
 
 ENV PORT=80
 
-CMD ["sh", "-c", "envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+CMD ["sh", "-c", "envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && cat /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
