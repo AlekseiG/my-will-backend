@@ -46,6 +46,7 @@ http { \
 }' > /etc/nginx/nginx.conf.template
 
 ENV PORT=8080
+ENV BACKEND_URL=""
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "sed \"s/__PORT__/${PORT}/g\" /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && exec nginx -g \"daemon off;\""]
+CMD ["sh", "-c", "sed -i \"s|__BACKEND_URL__|${BACKEND_URL}|g\" /usr/share/nginx/html/index.html && sed \"s/__PORT__/${PORT}/g\" /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && exec nginx -g \"daemon off;\""]

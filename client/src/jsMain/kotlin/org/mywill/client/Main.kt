@@ -13,8 +13,17 @@ import org.mywill.client.ui.App
 @OptIn(ExperimentalComposeUiApi::class)
 fun main() {
     onWasmReady {
-        // Определяем адрес бэкенда динамически по текущему хосту (порт 8080)
-        val backendOrigin = "${window.location.protocol}//${window.location.hostname}:8080"
+        // Получаем адрес бэкенда из глобальной переменной (устанавливается в index.html)
+        // Если переменная не задана или содержит плейсхолдер, используем дефолт
+        val dynamicWindow = window.asDynamic()
+        val envBackendUrl = dynamicWindow.BACKEND_URL as? String
+        val backendOrigin =
+            if (envBackendUrl != null && envBackendUrl != "__BACKEND_URL__" && envBackendUrl.isNotBlank()) {
+                envBackendUrl.removeSuffix("/")
+            } else {
+                "${window.location.protocol}//${window.location.hostname}:8080"
+            }
+        
         val controller = AppController(ApiClient(backendOrigin))
 
         // Обработка токена OAuth2 из URL (hash), если он есть
