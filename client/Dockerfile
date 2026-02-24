@@ -18,9 +18,6 @@ COPY androidApp androidApp
 RUN chmod +x gradlew
 RUN ./gradlew :client:jsBrowserDistribution --no-daemon
 
-# Проверка состава файлов после сборки в Gradle (для диагностики)
-RUN ls -R client/build/dist || echo "dist not found"
-
 # Этап раздачи статики
 FROM nginx:stable-alpine
 WORKDIR /usr/share/nginx/html
@@ -34,9 +31,6 @@ COPY --from=build /app/client/build/dist/js/productionExecutable/ ./
 # 2) Дополнительно копируем остальной dist (если там есть ассеты)
 COPY --from=build /app/client/build/dist/ ./
 
-# Проверочный файл
-RUN echo "Frontend is active" > test.txt
-
 # Максимально простой конфиг в корневом nginx.conf
 RUN echo 'events { worker_connections 1024; } \
 http { \
@@ -45,9 +39,6 @@ http { \
         listen __PORT__ default_server; \
         root /usr/share/nginx/html; \
         index index.html; \
-        location = / { \
-            try_files /index.html =404; \
-        } \
         location / { \
             try_files $uri $uri/ /index.html; \
         } \
