@@ -29,6 +29,9 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./* /etc/nginx/conf.d/* /etc/nginx/nginx.conf
 
 # Копируем фронтенд
+# 1) Явно копируем productionExecutable в корень (там у нас index.html и client.js)
+COPY --from=build /app/client/build/dist/js/productionExecutable/ ./
+# 2) Дополнительно копируем остальной dist (если там есть ассеты)
 COPY --from=build /app/client/build/dist/ ./
 
 # Проверочный файл
@@ -42,6 +45,9 @@ http { \
         listen __PORT__ default_server; \
         root /usr/share/nginx/html; \
         index index.html; \
+        location = / { \
+            try_files /index.html =404; \
+        } \
         location / { \
             try_files $uri $uri/ /index.html; \
         } \
