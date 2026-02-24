@@ -27,8 +27,8 @@ FROM nginx:stable-alpine
 RUN apk add --no-cache gettext
 WORKDIR /usr/share/nginx/html
 
-# Очищаем дефолтную папку nginx
-RUN rm -rf ./*
+# Очищаем дефолтную папку nginx и удаляем стандартный конфиг
+RUN rm -rf /usr/share/nginx/html/* && rm -rf /etc/nginx/conf.d/*
 
 # Копируем собранные файлы фронтенда.
 # Пытаемся скопировать всё содержимое из папок, куда Compose/Kotlin JS обычно складывают результат
