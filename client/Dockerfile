@@ -18,6 +18,9 @@ COPY androidApp androidApp
 RUN chmod +x gradlew
 RUN ./gradlew :client:jsBrowserProductionWebpack --no-daemon
 
+# Проверка состава файлов после сборки в Gradle (для диагностики)
+RUN ls -R client/build/dist/js/productionExecutable || echo "productionExecutable not found"
+
 # Этап раздачи статики
 FROM nginx:stable-alpine
 # Устанавливаем envsubst (из пакета gettext) для подстановки переменных окружения в конфиг Nginx
@@ -28,7 +31,9 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Копируем собранные файлы фронтенда. Используем путь, явно указанный в client/build.gradle.kts
-COPY --from=build /app/client/build/dist/js/productionExecutable/ .
+# Пытаемся скопировать всё содержимое. Используем несколько COPY для надежности.
+COPY --from=build /app/client/build/dist/js/productionExecutable/ /usr/share/nginx/html/
+
 
 # Отладочная команда для проверки состава файлов (используем ARG для сброса кэша)
 ARG CACHEBUST=1
