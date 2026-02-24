@@ -28,10 +28,10 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 
 # Копируем собранные файлы фронтенда
-# Путь в соответствии с client/build.gradle.kts: outputDirectory.set(file("$projectDir/build/dist/js/productionExecutable"))
-COPY --from=build /app/client/build/dist/js/productionExecutable/ .
+# По умолчанию Kotlin JS Webpack складывает всё в build/distributions
+COPY --from=build /app/client/build/distributions/ .
 
-# Отладочная команда для проверки состава файлов (её результат будет виден в логах Railway при билде/старте)
+# Отладочная команда для проверки состава файлов, todo delete it
 RUN ls -R /usr/share/nginx/html
 
 # Настройка Nginx для SPA и поддержка динамического порта через Railway
