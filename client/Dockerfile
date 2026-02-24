@@ -31,6 +31,9 @@ RUN rm -rf ./*
 # Путь в соответствии с client/build.gradle.kts: outputDirectory.set(file("$projectDir/build/dist/js/productionExecutable"))
 COPY --from=build /app/client/build/dist/js/productionExecutable/ .
 
+# Отладочная команда для проверки состава файлов (её результат будет виден в логах Railway при билде/старте)
+RUN ls -R /usr/share/nginx/html
+
 # Настройка Nginx для SPA и поддержка динамического порта через Railway
 RUN echo 'server { \
     listen ${PORT}; \

@@ -1,14 +1,12 @@
 server:
   port: ${PORT:8080}
 spring:
-  profiles:
-    include: secret
   application:
     name: MyWill
   datasource:
-    url: ${spring.datasource.url}
-    username: ${spring.datasource.username}
-    password: ${spring.datasource.password}
+    url: ${{SPRING_DATASOURCE_URL}}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
   jpa:
     open-in-view: false
@@ -24,9 +22,9 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${spring.mail.username}
-    # Пароль берется из application-secret.yml
-    password: ${spring.mail.password}
+    username: ${SPRING_MAIL_USERNAME}
+    # Пароль берется из переменных окружения
+    password: ${SPRING_MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -39,18 +37,22 @@ spring:
       client:
         registration:
           google:
-            client-id: ${google.client-id}
-            client-secret: ${google.client-secret}
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
               - email
               - profile
 
+jwt:
+  secret: ${JWT_SECRET}
+  expirationMs: ${JWT_EXPIRATIONMS:86400000}
+
 app:
   # URL фронтенда, на который будет редирект после успешного OAuth2-логина
-  frontend-base-url: ${FRONTEND_BASE_URL:http://myappp.org:8081}
+  frontend-base-url: ${FRONTEND_BASE_URL}
   death-check:
-    fixed-rate: 60000
+    fixed-rate: 86400
 
 logging:
   level:
