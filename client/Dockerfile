@@ -27,9 +27,8 @@ WORKDIR /usr/share/nginx/html
 # Очищаем дефолтную папку nginx
 RUN rm -rf ./*
 
-# Копируем собранные файлы фронтенда
-# По умолчанию Kotlin JS Webpack складывает всё в build/distributions
-COPY --from=build /app/client/build/distributions/ .
+# Копируем собранные файлы фронтенда. Используем путь, явно указанный в client/build.gradle.kts
+COPY --from=build /app/client/build/dist/js/productionExecutable/ .
 
 # Отладочная команда для проверки состава файлов, todo delete it
 RUN ls -R /usr/share/nginx/html
