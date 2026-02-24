@@ -51,24 +51,25 @@ RUN echo 'server { \
 }' > /etc/nginx/conf.d/default.conf.template
 
 # Перезаписываем основной конфиг nginx, чтобы он ТОЧНО не использовал дефолты
-RUN echo 'user  nginx; \
-worker_processes  auto; \
-error_log  /var/log/nginx/error.log notice; \
-pid        /var/run/nginx.pid; \
-events { \
-    worker_connections  1024; \
-} \
-http { \
-    include       /etc/nginx/mime.types; \
-    default_type  application/octet-stream; \
-    log_format  main  "$$remote_addr - $$remote_user [$$time_local] \"$$request\" " \
-                      "$$status $$body_bytes_sent \"$$http_referer\" " \
-                      "\"$$http_user_agent\" \"$$http_x_forwarded_for\""; \
-    access_log  /var/log/nginx/access.log  main; \
-    sendfile        on; \
-    keepalive_timeout  65; \
-    include /etc/nginx/conf.d/*.conf; \
-}' > /etc/nginx/nginx.conf
+# Используем одинарные кавычки для EOF, чтобы переменные $ не раскрывались оболочкой при записи
+RUN printf "user  nginx;\n\
+worker_processes  auto;\n\
+error_log  /var/log/nginx/error.log notice;\n\
+pid        /var/run/nginx.pid;\n\
+events {\n\
+    worker_connections  1024;\n\
+}\n\
+http {\n\
+    include       /etc/nginx/mime.types;\n\
+    default_type  application/octet-stream;\n\
+    log_format  main  '\$remote_addr - \$remote_user [\$time_local] \"\$request\" '\n\
+                      '\$status \$body_bytes_sent \"\$http_referer\" '\n\
+                      '\"\$http_user_agent\" \"\$http_x_forwarded_for\"';\n\
+    access_log  /var/log/nginx/access.log  main;\n\
+    sendfile        on;\n\
+    keepalive_timeout  65;\n\
+    include /etc/nginx/conf.d/*.conf;\n\
+}\n" > /etc/nginx/nginx.conf
 
 ENV PORT=80
 
