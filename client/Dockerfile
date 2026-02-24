@@ -20,7 +20,6 @@ RUN ./gradlew :client:jsBrowserDistribution --no-daemon
 
 # Проверка состава файлов после сборки в Gradle (для диагностики)
 RUN ls -R client/build/dist || echo "dist not found"
-RUN ls -R client/build/distributions || echo "distributions not found"
 
 # Этап раздачи статики
 FROM nginx:stable-alpine
@@ -34,7 +33,6 @@ RUN rm -rf ./*
 # Копируем собранные файлы фронтенда.
 # Пытаемся скопировать всё содержимое из папок, куда Compose/Kotlin JS обычно складывают результат
 COPY --from=build /app/client/build/dist/ ./
-COPY --from=build /app/client/build/distributions/ ./
 
 
 # Отладочная команда для проверки состава файлов (используем ARG для сброса кэша)
