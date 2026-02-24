@@ -39,6 +39,9 @@ http { \
         listen __PORT__ default_server; \
         root /usr/share/nginx/html; \
         index index.html; \
+        location = / { \
+            try_files /index.html =404; \
+        } \
         location / { \
             try_files $uri $uri/ /index.html; \
         } \
