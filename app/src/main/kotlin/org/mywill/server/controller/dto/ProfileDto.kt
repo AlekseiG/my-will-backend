@@ -14,7 +14,9 @@ data class ProfileDto(
     @Schema(description = "Флаг, признан ли пользователь умершим")
     val isDead: Boolean,
     @Schema(description = "Дата и время подтверждения смерти")
-    val deathConfirmedAt: Instant? = null
+    val deathConfirmedAt: Instant? = null,
+    @Schema(description = "Наличие оплаченной подписки")
+    val isSubscribed: Boolean = false
 )
 
 @Schema(description = "Запрос на обновление профиля")

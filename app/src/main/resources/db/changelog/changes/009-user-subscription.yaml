@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-user-subscription
+      author: junie
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: is_subscribed
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false

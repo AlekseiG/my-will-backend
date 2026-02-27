@@ -1,9 +1,9 @@
 package org.mywill.server.service
 
-import org.mywill.server.entity.Will
-import org.mywill.server.repository.WillRepository
-import org.mywill.server.repository.UserRepository
 import org.mywill.server.controller.dto.WillDto
+import org.mywill.server.entity.Will
+import org.mywill.server.repository.UserRepository
+import org.mywill.server.repository.WillRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -67,13 +67,29 @@ class WillService(
      * @param userEmail Email создателя завещания.
      * @param title Заголовок завещания.
      * @param content Содержимое завещания.
+     * @param attachments Список URL вложений.
      * @return DTO созданного завещания.
-     * @throws RuntimeException если пользователь не найден.
+     * @throws RuntimeException если пользователь не найден или если добавлены вложения без подписки.
      */
     @Transactional
-    fun createWill(userEmail: String, title: String, content: String): WillDto {
+    fun createWill(
+        userEmail: String,
+        title: String,
+        content: String,
+        attachments: List<String> = emptyList()
+    ): WillDto {
         val user = userRepository.findByEmail(userEmail) ?: throw RuntimeException("User not found")
-        val will = Will(owner = user, title = title, content = content)
+
+        if (attachments.isNotEmpty() && !user.isSubscribed) {
+            throw RuntimeException("Attachments are only available for subscribed users")
+        }
+
+        val will = Will(
+            owner = user,
+            title = title,
+            content = content,
+            attachments = attachments.toMutableList()
+        )
         val savedWill = willRepository.save(will)
         return savedWill.toDto()
     }
@@ -84,17 +100,30 @@ class WillService(
      * @param userEmail Email пользователя, пытающегося обновить завещание.
      * @param title Новый заголовок.
      * @param content Новое содержимое.
+     * @param attachments Новый список URL вложений.
      * @return DTO обновленного завещания.
-     * @throws RuntimeException если завещание не найдено или пользователь не является владельцем.
+     * @throws RuntimeException если завещание не найдено, пользователь не является владельцем или добавлены вложения без подписки.
      */
     @Transactional
-    fun updateWill(id: Long, userEmail: String, title: String, content: String): WillDto {
+    fun updateWill(
+        id: Long,
+        userEmail: String,
+        title: String,
+        content: String,
+        attachments: List<String> = emptyList()
+    ): WillDto {
         val will = willRepository.findById(id).orElseThrow { RuntimeException("Will not found") }
         if (will.owner.email != userEmail) {
             throw RuntimeException("Only owner can update will")
         }
+
+        if (attachments.isNotEmpty() && !will.owner.isSubscribed) {
+            throw RuntimeException("Attachments are only available for subscribed users")
+        }
+
         will.title = title
         will.content = content
+        will.attachments = attachments.toMutableList()
         return willRepository.save(will).toDto()
     }
 
@@ -117,5 +146,5 @@ class WillService(
         return willRepository.save(will).toDto()
     }
 
-    private fun Will.toDto() = WillDto(id, title, content, owner.email, allowedEmails)
+    private fun Will.toDto() = WillDto(id, title, content, owner.email, allowedEmails, attachments)
 }

@@ -32,5 +32,8 @@ class User(
     var isDead: Boolean = false,
 
     @Column(name = "death_confirmed_at")
-    var deathConfirmedAt: Instant? = null
+    var deathConfirmedAt: Instant? = null,
+
+    @Column(name = "is_subscribed", nullable = false)
+    var isSubscribed: Boolean = false
 )

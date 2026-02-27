@@ -16,7 +16,9 @@ data class WillDto(
     @Schema(description = "Email владельца")
     val ownerEmail: String = "",
     @Schema(description = "Список email, которым разрешен доступ")
-    val allowedEmails: Set<String> = emptySet()
+    val allowedEmails: Set<String> = emptySet(),
+    @Schema(description = "Список URL вложений")
+    val attachments: List<String> = emptyList()
 )
 
 /**
@@ -27,7 +29,9 @@ data class CreateWillRequest(
     @Schema(description = "Заголовок")
     val title: String,
     @Schema(description = "Содержимое")
-    val content: String
+    val content: String,
+    @Schema(description = "Список URL вложений")
+    val attachments: List<String> = emptyList()
 )
 
 /**
@@ -38,7 +42,9 @@ data class UpdateWillRequest(
     @Schema(description = "Заголовок")
     val title: String,
     @Schema(description = "Содержимое")
-    val content: String
+    val content: String,
+    @Schema(description = "Список URL вложений")
+    val attachments: List<String> = emptyList()
 )
 
 /**

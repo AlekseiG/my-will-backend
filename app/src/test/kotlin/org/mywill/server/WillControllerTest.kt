@@ -215,4 +215,81 @@ class WillControllerTest : BaseIntegrationTest() {
             status { isForbidden() }
         }
     }
+
+    @Test
+    fun testWillAttachmentsAndSubscription() {
+        val email = "subscriber@example.com"
+        val password = "password"
+
+        // Register and login
+        mvc.post("/auth/register") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(AuthRequest(email, password))
+        }
+        val code = userRepository.findByEmail(email)!!.verificationCode!!
+        mvc.post("/auth/verify") {
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(VerifyRequest(email, code))
+        }
+        val token = objectMapper.readTree(
+            mvc.post("/auth/login") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(AuthRequest(email, password))
+            }.andReturn().response.contentAsString
+        ).get("token").asText()
+
+        // 1. Try to create will with attachments without subscription (Should fail)
+        mvc.post("/api/will") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(
+                CreateWillRequest(
+                    "Title",
+                    "Content",
+                    listOf("http://example.com/file.mp4")
+                )
+            )
+        }.andExpect {
+            status { isInternalServerError() } // Based on current Exception handling, it might be 500
+        }
+
+        // 2. Set user as subscribed
+        val user = userRepository.findByEmail(email)!!
+        user.isSubscribed = true
+        userRepository.save(user)
+
+        // 3. Create will with attachments with subscription (Should succeed)
+        val attachments = listOf("http://example.com/video.mp4", "http://example.com/photo.jpg")
+        val createRes = mvc.post("/api/will") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(
+                CreateWillRequest(
+                    "Subscribed Title",
+                    "Subscribed Content",
+                    attachments
+                )
+            )
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.attachments.length()") { value(2) }
+            jsonPath("$.attachments[0]") { value(attachments[0]) }
+            jsonPath("$.attachments[1]") { value(attachments[1]) }
+        }.andReturn()
+
+        val willId = objectMapper.readTree(createRes.response.contentAsString).get("id").asLong()
+
+        // 4. Update will with new attachments
+        val newAttachments = listOf("http://example.com/audio.mp3")
+        mvc.put("/api/will/$willId") {
+            header("Authorization", "Bearer $token")
+            contentType = MediaType.APPLICATION_JSON
+            content =
+                objectMapper.writeValueAsString(UpdateWillRequest("Updated Title", "Updated Content", newAttachments))
+        }.andExpect {
+            status { isOk() }
+            jsonPath("$.attachments.length()") { value(1) }
+            jsonPath("$.attachments[0]") { value(newAttachments[0]) }
+        }
+    }
 }

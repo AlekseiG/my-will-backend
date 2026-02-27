@@ -42,7 +42,8 @@ data class WillDto(
     val title: String = "",
     val content: String = "",
     val ownerEmail: String = "",
-    val allowedEmails: Set<String> = emptySet()
+    val allowedEmails: Set<String> = emptySet(),
+    val attachments: List<String> = emptyList()
 )
 
 /**
@@ -51,7 +52,8 @@ data class WillDto(
 @Serializable
 data class CreateWillRequest(
     val title: String,
-    val content: String
+    val content: String,
+    val attachments: List<String> = emptyList()
 )
 
 /**
@@ -60,7 +62,8 @@ data class CreateWillRequest(
 @Serializable
 data class UpdateWillRequest(
     val title: String,
-    val content: String
+    val content: String,
+    val attachments: List<String> = emptyList()
 )
 
 /**
@@ -77,7 +80,8 @@ data class ProfileDto(
     val avatarUrl: String? = null,
     val deathTimeoutSeconds: Long,
     val isDead: Boolean,
-    val deathConfirmedAt: String? = null
+    val deathConfirmedAt: String? = null,
+    val isSubscribed: Boolean = false
 )
 
 @Serializable

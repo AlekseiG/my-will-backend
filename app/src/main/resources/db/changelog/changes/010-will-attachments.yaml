@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-will-attachments
+      author: junie
+      changes:
+        - createTable:
+            tableName: will_attachments
+            columns:
+              - column:
+                  name: will_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_will_attachments_will
+                    referencedTableName: wills
+                    referencedColumnNames: id
+              - column:
+                  name: url
+                  type: varchar(2048)
+                  constraints:
+                    nullable: false

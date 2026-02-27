@@ -3,7 +3,10 @@ package org.mywill.server.controller
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.mywill.server.controller.dto.*
+import org.mywill.server.controller.dto.AddAccessRequest
+import org.mywill.server.controller.dto.CreateWillRequest
+import org.mywill.server.controller.dto.UpdateWillRequest
+import org.mywill.server.controller.dto.WillDto
 import org.mywill.server.service.WillService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
@@ -41,7 +44,7 @@ class WillController(private val willService: WillService) {
         principal: Principal,
         @RequestBody request: CreateWillRequest
     ): WillDto {
-        return willService.createWill(principal.name, request.title, request.content)
+        return willService.createWill(principal.name, request.title, request.content, request.attachments)
     }
 
     @PutMapping("/{id}")
@@ -51,7 +54,7 @@ class WillController(private val willService: WillService) {
         principal: Principal,
         @RequestBody request: UpdateWillRequest
     ): WillDto {
-        return willService.updateWill(id, principal.name, request.title, request.content)
+        return willService.updateWill(id, principal.name, request.title, request.content, request.attachments)
     }
 
     @PostMapping("/{id}/access")

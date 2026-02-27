@@ -10,7 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.mywill.client.*
+import org.mywill.client.AppController
+import org.mywill.client.ProfileDto
+import org.mywill.client.TrustedPersonDto
+import org.mywill.client.WillDto
 
 enum class Screen {
     Auth, List, Editor, Profile, Trusted
@@ -316,9 +319,16 @@ fun EditorScreen(
     var content by remember { mutableStateOf(will?.content ?: "") }
     var currentWillId by remember { mutableStateOf(will?.id) }
     var allowedEmails by remember { mutableStateOf(will?.allowedEmails ?: emptyList()) }
+    var attachments by remember { mutableStateOf(will?.attachments ?: emptyList()) }
     var accessEmail by remember { mutableStateOf("") }
+    var attachmentUrl by remember { mutableStateOf("") }
+    var profile by remember { mutableStateOf<ProfileDto?>(null) }
     
     val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        profile = controller.loadProfile()
+    }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         TextField(
@@ -336,21 +346,63 @@ fun EditorScreen(
             modifier = Modifier.fillMaxWidth().weight(1f),
             readOnly = isReadOnly
         )
+
+        if (isReadOnly && attachments.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            Text("Вложения", style = MaterialTheme.typography.titleMedium)
+            attachments.forEach { url ->
+                Text(url, color = MaterialTheme.colorScheme.primary)
+            }
+        }
         
         if (!isReadOnly) {
             Spacer(Modifier.height(16.dp))
+
+            if (profile?.isSubscribed == true) {
+                Text("Вложения", style = MaterialTheme.typography.titleMedium)
+                attachments.forEach { url ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(url, modifier = Modifier.weight(1f), maxLines = 1)
+                        IconButton(onClick = { attachments = attachments - url }) {
+                            Text("❌")
+                        }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextField(
+                        value = attachmentUrl,
+                        onValueChange = { attachmentUrl = it },
+                        label = { Text("URL медиа (фото/видео/аудио)") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Button(onClick = {
+                        if (attachmentUrl.isNotBlank()) {
+                            attachments = attachments + attachmentUrl
+                            attachmentUrl = ""
+                        }
+                    }) {
+                        Text("Добавить")
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            } else {
+                Text("Вложения доступны только по подписке", color = MaterialTheme.colorScheme.secondary)
+                Spacer(Modifier.height(8.dp))
+            }
+
             Button(
                 onClick = {
                     scope.launch {
                         val res = if (currentWillId == null) {
-                            controller.createWill(title, content)
+                            controller.createWill(title, content, attachments)
                         } else {
-                            controller.updateWill(currentWillId!!, title, content)
+                            controller.updateWill(currentWillId!!, title, content, attachments)
                         }
                         if (res != null) {
                             showSnackbar("Saved")
                             currentWillId = res.id
                             allowedEmails = res.allowedEmails
+                            attachments = res.attachments
                         } else {
                             showSnackbar("Error saving")
                         }

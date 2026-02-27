@@ -22,5 +22,10 @@ class Will(
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "will_access_emails", joinColumns = [JoinColumn(name = "will_id")])
     @Column(name = "email")
-    var allowedEmails: MutableSet<String> = mutableSetOf()
+    var allowedEmails: MutableSet<String> = mutableSetOf(),
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "will_attachments", joinColumns = [JoinColumn(name = "will_id")])
+    @Column(name = "url")
+    var attachments: MutableList<String> = mutableListOf()
 )

@@ -1,17 +1,17 @@
 package org.mywill.server.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import jakarta.servlet.http.HttpSession
 import org.mywill.server.config.JwtUtils
-import org.mywill.server.entity.User
-import org.mywill.server.repository.UserRepository
 import org.mywill.server.controller.dto.AuthRequest
 import org.mywill.server.controller.dto.AuthResponse
 import org.mywill.server.controller.dto.VerifyRequest
-import jakarta.servlet.http.HttpSession
+import org.mywill.server.entity.User
+import org.mywill.server.repository.UserRepository
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository
 import org.springframework.stereotype.Service
 import kotlin.random.Random
 
@@ -53,7 +53,6 @@ class AuthService(
         try {
             emailService.sendVerificationCode(request.email, verificationCode)
         } catch (e: Exception) {
-            // В реальном приложении стоит логировать ошибку и возможно возвращать предупреждение
             logger.error(e) { "failed to send email: ${e.message}" }
             return AuthResponse(true, "Registration successful, but failed to send email. Your code is: $verificationCode")
         }

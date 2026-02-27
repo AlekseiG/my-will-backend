@@ -1,6 +1,5 @@
 package org.mywill.client
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -84,12 +83,18 @@ class AppController(
         api.getWill(id)
     }
 
-    suspend fun createWill(title: String, content: String): WillDto? = safeNullableCall {
-        api.createWill(CreateWillRequest(title, content))
+    suspend fun createWill(title: String, content: String, attachments: List<String> = emptyList()): WillDto? =
+        safeNullableCall {
+            api.createWill(CreateWillRequest(title, content, attachments))
     }
 
-    suspend fun updateWill(id: Long, title: String, content: String): WillDto? = safeNullableCall {
-        api.updateWill(id, UpdateWillRequest(title, content))
+    suspend fun updateWill(
+        id: Long,
+        title: String,
+        content: String,
+        attachments: List<String> = emptyList()
+    ): WillDto? = safeNullableCall {
+        api.updateWill(id, UpdateWillRequest(title, content, attachments))
     }
 
     suspend fun addAccess(id: Long, email: String): WillDto? = safeNullableCall {

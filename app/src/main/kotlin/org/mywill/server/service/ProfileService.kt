@@ -4,8 +4,8 @@ import org.mywill.server.controller.dto.ChangePasswordRequest
 import org.mywill.server.controller.dto.ProfileDto
 import org.mywill.server.controller.dto.UpdateProfileRequest
 import org.mywill.server.entity.User
-import org.mywill.server.repository.UserRepository
 import org.mywill.server.repository.TrustedPersonRepository
+import org.mywill.server.repository.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -101,6 +101,7 @@ class ProfileService(
         avatarUrl = avatarUrl,
         deathTimeoutSeconds = deathTimeoutSeconds,
         isDead = isDead,
-        deathConfirmedAt = deathConfirmedAt
+        deathConfirmedAt = deathConfirmedAt,
+        isSubscribed = isSubscribed
     )
 }
