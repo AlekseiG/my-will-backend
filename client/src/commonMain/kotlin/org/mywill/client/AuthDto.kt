@@ -1,5 +1,6 @@
 package org.mywill.client
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -78,9 +79,13 @@ data class AddAccessRequest(
 data class ProfileDto(
     val email: String,
     val avatarUrl: String? = null,
+    @SerialName("deathTimeoutSeconds")
     val deathTimeoutSeconds: Long,
+    @SerialName("dead")
     val isDead: Boolean,
+    @SerialName("deathConfirmedAt")
     val deathConfirmedAt: String? = null,
+    @SerialName("subscribed")
     val isSubscribed: Boolean = false
 )
 

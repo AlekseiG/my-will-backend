@@ -4,12 +4,13 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.mywill.server.controller.dto.AddAccessRequest
-import org.mywill.server.controller.dto.CreateWillRequest
-import org.mywill.server.controller.dto.UpdateWillRequest
 import org.mywill.server.controller.dto.WillDto
 import org.mywill.server.service.WillService
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 import java.security.Principal
 
 private val logger = KotlinLogging.logger {}
@@ -38,31 +39,53 @@ class WillController(private val willService: WillService) {
         return if (will != null) ResponseEntity.ok(will) else ResponseEntity.notFound().build()
     }
 
-    @PostMapping
-    @Operation(summary = "Создает новое завещание для текущего пользователя.")
+    @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @Operation(summary = "Создает новое завещание для текущего пользователя с вложениями.")
     fun createWill(
-        principal: Principal,
-        @RequestBody request: CreateWillRequest
+        @RequestPart("title") title: String,
+        @RequestPart("content") content: String,
+        @RequestPart("attachments", required = false) attachments: List<String>?,
+        @RequestPart("files", required = false) files: List<MultipartFile>?,
+        principal: Principal
     ): WillDto {
-        return willService.createWill(principal.name, request.title, request.content, request.attachments)
+        val fileMap = files?.associate { it.originalFilename!! to it.bytes } ?: emptyMap()
+        return willService.createWill(principal.name, title, content, attachments ?: emptyList(), fileMap)
     }
 
-    @PutMapping("/{id}")
-    @Operation(summary = "Обновляет заголовок и содержание существующего завещания.")
+    @PutMapping("/{id}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @Operation(summary = "Обновляет существующее завещание с вложениями.")
     fun updateWill(
         @PathVariable id: Long,
-        principal: Principal,
-        @RequestBody request: UpdateWillRequest
+        @RequestPart("title") title: String,
+        @RequestPart("content") content: String,
+        @RequestPart("attachments", required = false) attachments: List<String>?,
+        @RequestPart("files", required = false) files: List<MultipartFile>?,
+        principal: Principal
     ): WillDto {
-        return willService.updateWill(id, principal.name, request.title, request.content, request.attachments)
+        val fileMap = files?.associate { it.originalFilename!! to it.bytes } ?: emptyMap()
+        return willService.updateWill(id, principal.name, title, content, attachments ?: emptyList(), fileMap)
+    }
+
+    @GetMapping("/{id}/attachment/{key}")
+    @Operation(summary = "Загружает вложение по ключу.")
+    fun downloadAttachment(
+        @PathVariable id: Long,
+        @PathVariable key: String,
+        principal: Principal
+    ): ResponseEntity<ByteArray> {
+        val data = willService.downloadAttachment(id, key, principal.name)
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$key\"")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(data)
     }
 
     @PostMapping("/{id}/access")
     @Operation(summary = "Предоставляет доступ к завещанию другому пользователю по его email.")
     fun addAccess(
         @PathVariable id: Long,
-        principal: Principal,
-        @RequestBody request: AddAccessRequest
+        @RequestBody request: AddAccessRequest,
+        principal: Principal
     ): WillDto {
         return willService.addAllowedEmail(id, principal.name, request.email)
     }

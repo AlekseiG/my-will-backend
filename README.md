@@ -44,6 +44,40 @@
       распределённая среда).
     - `org.mywill.server.config.converter.KotlinInstantConverter` — конвертер Kotlin `Instant` для Jackson.
     - Миграции БД — Liquibase (`app/src/main/resources/db/changelog`).
+
+### S3 Storage
+
+Используется для хранения вложений к завещаниям.
+
+- Поддерживается любой S3-совместимый провайдер (AWS S3, Minio, Yandex Object Storage).
+- Настройки находятся в `application.yml` под префиксом `s3`.
+
+## Локальная разработка (Docker)
+
+Для работы приложения требуются PostgreSQL и S3 (Minio). Вы можете запустить их через Docker:
+
+```bash
+# Запуск PostgreSQL
+docker run -d --name mywill-db \
+  -e POSTGRES_PASSWORD=pass \
+  -e POSTGRES_USER=user \
+  -e POSTGRES_DB=mywill \
+  -p 5432:5432 \
+  postgres
+
+# Запуск Minio (S3-совместимое хранилище)
+docker run -d --name mywill-s3 \
+  -p 9000:9000 \
+  -p 9001:9001 \
+  -e "MINIO_ROOT_USER=minioadmin" \
+  -e "MINIO_ROOT_PASSWORD=minioadmin" \
+  minio/minio server /data --console-address ":9001"
+```
+
+После запуска Minio:
+
+1. Зайдите в консоль управления: `http://localhost:9001` (логин/пароль: `minioadmin` / `minioadmin`).
+2. Приложение автоматически создаст бакет `mywill-attachments` при первом обращении.
   - DTO и маппинг:
     - Пакет `org.mywill.server.controller.dto` содержит DTO (`AuthDto`, `ProfileDto`, `WillDto`, `TrustedPersonDto`).
     - Простейшие маппинги реализованы в сервисах/сущностях (см. `TrustedPerson.toDto()`).

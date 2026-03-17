@@ -4,10 +4,12 @@ import io.ktor.client.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.cookies.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import org.mywill.client.ui.SelectedFile
 
 /**
  * Клиент для взаимодействия с API бэкенда.
@@ -21,20 +23,18 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
     /**
      * Экземпляр HttpClient с настроенным ContentNegotiation (JSON) и поддержкой Cookies.
      */
-    private val client = try {
-        println("[DEBUG_LOG] HttpClient initializing...")
-        HttpClient {
-            install(ContentNegotiation) {
-                println("[DEBUG_LOG] ContentNegotiation installing...")
-                json(Json {
-                    ignoreUnknownKeys = true
-                })
-            }
-            install(HttpCookies)
+    private val client = HttpClient {
+        install(ContentNegotiation) {
+            json(Json {
+                ignoreUnknownKeys = true
+            })
         }
-    } catch (e: Exception) {
-        println("[ERROR_LOG] HttpClient initialization failed: ${e.message}")
-        throw e
+        install(HttpCookies)
+    }
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        coerceInputValues = true
     }
 
     /**
@@ -81,7 +81,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 setBody(authRequest)
                 withCredentials()
             }
-            Json.decodeFromString<AuthResponse>(response.bodyAsText())
+            json.decodeFromString<AuthResponse>(response.bodyAsText())
         } catch (e: Exception) {
             AuthResponse(false, "Error: ${e.message}")
         }
@@ -97,7 +97,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 setBody(authRequest)
                 withCredentials()
             }
-            val result = Json.decodeFromString<AuthResponse>(response.bodyAsText())
+            val result = json.decodeFromString<AuthResponse>(response.bodyAsText())
             if (result.success && result.token != null) {
                 authToken = result.token
                 println("[DEBUG_LOG] Auth token saved")
@@ -118,7 +118,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 setBody(verifyRequest)
                 withCredentials()
             }
-            Json.decodeFromString<AuthResponse>(response.bodyAsText())
+            json.decodeFromString<AuthResponse>(response.bodyAsText())
         } catch (e: Exception) {
             AuthResponse(false, "Error: ${e.message}")
         }
@@ -133,7 +133,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 withCredentials()
             }
             if (response.status == HttpStatusCode.OK) {
-                Json.decodeFromString<List<WillDto>>(response.bodyAsText())
+                json.decodeFromString<List<WillDto>>(response.bodyAsText())
             } else emptyList()
         } catch (e: Exception) {
             emptyList()
@@ -149,7 +149,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 withCredentials()
             }
             if (response.status == HttpStatusCode.OK) {
-                Json.decodeFromString<List<WillDto>>(response.bodyAsText())
+                json.decodeFromString<List<WillDto>>(response.bodyAsText())
             } else emptyList()
         } catch (e: Exception) {
             emptyList()
@@ -165,7 +165,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 withCredentials()
             }
             if (response.status == HttpStatusCode.OK) {
-                Json.decodeFromString<WillDto>(response.bodyAsText())
+                json.decodeFromString<WillDto>(response.bodyAsText())
             } else null
         } catch (e: Exception) {
             null
@@ -173,35 +173,77 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
     }
 
     /**
-     * Создание нового завещания.
+     * Создание нового завещания с вложениями (Multipart).
      */
-    suspend fun createWill(request: CreateWillRequest): WillDto? {
+    suspend fun createWill(
+        title: String,
+        content: String,
+        attachments: List<String>,
+        files: List<SelectedFile>
+    ): WillDto? {
         return try {
-            val response: HttpResponse = client.post("$baseUrl/api/will") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
+            val response: HttpResponse = client.submitFormWithBinaryData(
+                url = "$baseUrl/api/will",
+                formData = formData {
+                    append("title", title)
+                    append("content", content)
+                    attachments.forEach { append("attachments", it) }
+                    files.forEach { file ->
+                        append("files", file.bytes, Headers.build {
+                            append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                        })
+                    }
+                }
+            ) {
                 withCredentials()
             }
-            Json.decodeFromString<WillDto>(response.bodyAsText())
+            if (response.status == HttpStatusCode.OK) {
+                json.decodeFromString<WillDto>(response.bodyAsText())
+            } else null
         } catch (e: Exception) {
+            println("[ERROR_LOG] Create will failed: ${e.message}")
             null
         }
     }
 
     /**
-     * Обновление существующего завещания.
+     * Обновление завещания с вложениями (Multipart).
      */
-    suspend fun updateWill(id: Long, request: UpdateWillRequest): WillDto? {
+    suspend fun updateWill(
+        id: Long,
+        title: String,
+        content: String,
+        attachments: List<String>,
+        files: List<SelectedFile>
+    ): WillDto? {
         return try {
-            val response: HttpResponse = client.put("$baseUrl/api/will/$id") {
-                contentType(ContentType.Application.Json)
-                setBody(request)
+            val response: HttpResponse = client.submitFormWithBinaryData(
+                url = "$baseUrl/api/will/$id",
+                formData = formData {
+                    append("title", title)
+                    append("content", content)
+                    attachments.forEach { append("attachments", it) }
+                    files.forEach { file ->
+                        append("files", file.bytes, Headers.build {
+                            append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
+                        })
+                    }
+                }
+            ) {
+                method = HttpMethod.Put
                 withCredentials()
             }
-            Json.decodeFromString<WillDto>(response.bodyAsText())
+            if (response.status == HttpStatusCode.OK) {
+                json.decodeFromString<WillDto>(response.bodyAsText())
+            } else null
         } catch (e: Exception) {
+            println("[ERROR_LOG] Update will failed: ${e.message}")
             null
         }
+    }
+
+    fun getDownloadUrl(willId: Long, key: String): String {
+        return "$baseUrl/api/will/$willId/attachment/$key"
     }
 
     /**
@@ -214,7 +256,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 setBody(request)
                 withCredentials()
             }
-            Json.decodeFromString<WillDto>(response.bodyAsText())
+            json.decodeFromString<WillDto>(response.bodyAsText())
         } catch (e: Exception) {
             null
         }
@@ -226,9 +268,17 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 withCredentials()
             }
             if (response.status == HttpStatusCode.OK) {
-                Json.decodeFromString<ProfileDto>(response.bodyAsText())
+                val text = response.bodyAsText()
+                println("[DEBUG_LOG] Profile response: $text")
+                try {
+                    json.decodeFromString<ProfileDto>(text)
+                } catch (e: Exception) {
+                    println("[ERROR_LOG] Profile decoding error: ${e.message}")
+                    null
+                }
             } else null
         } catch (e: Exception) {
+            println("[ERROR_LOG] getProfile request failed: ${e.message}")
             null
         }
     }
@@ -240,7 +290,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 setBody(request)
                 withCredentials()
             }
-            Json.decodeFromString<ProfileDto>(response.bodyAsText())
+            json.decodeFromString<ProfileDto>(response.bodyAsText())
         } catch (e: Exception) {
             null
         }
@@ -287,7 +337,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 withCredentials()
             }
             if (response.status == HttpStatusCode.OK) {
-                Json.decodeFromString<List<TrustedPersonDto>>(response.bodyAsText())
+                json.decodeFromString<List<TrustedPersonDto>>(response.bodyAsText())
             } else emptyList()
         } catch (e: Exception) {
             emptyList()
@@ -301,7 +351,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 setBody(request)
                 withCredentials()
             }
-            Json.decodeFromString<TrustedPersonDto>(response.bodyAsText())
+            json.decodeFromString<TrustedPersonDto>(response.bodyAsText())
         } catch (e: Exception) {
             null
         }
@@ -337,7 +387,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 withCredentials()
             }
             if (response.status == HttpStatusCode.OK) {
-                Json.decodeFromString<List<String>>(response.bodyAsText())
+                json.decodeFromString<List<String>>(response.bodyAsText())
             } else emptyList()
         } catch (e: Exception) {
             emptyList()

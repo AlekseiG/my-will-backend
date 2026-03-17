@@ -34,6 +34,7 @@ dependencies {
     implementation("net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.6.0")
     implementation("org.bouncycastle:bcprov-jdk18on:1.83")
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+    implementation("software.amazon.awssdk:s3:2.25.10")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
     runtimeOnly("org.postgresql:postgresql")

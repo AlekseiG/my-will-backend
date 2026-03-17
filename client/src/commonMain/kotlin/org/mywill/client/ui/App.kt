@@ -320,14 +320,26 @@ fun EditorScreen(
     var currentWillId by remember { mutableStateOf(will?.id) }
     var allowedEmails by remember { mutableStateOf(will?.allowedEmails ?: emptyList()) }
     var attachments by remember { mutableStateOf(will?.attachments ?: emptyList()) }
+    var selectedFiles by remember { mutableStateOf(emptyList<SelectedFile>()) }
     var accessEmail by remember { mutableStateOf("") }
-    var attachmentUrl by remember { mutableStateOf("") }
-    var profile by remember { mutableStateOf<ProfileDto?>(null) }
-    
+    var isLoadingProfile by remember { mutableStateOf(false) }
+
+    val profile = controller.state.profile
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        profile = controller.loadProfile()
+        if (profile == null) {
+            isLoadingProfile = true
+            try {
+                println("[DEBUG_LOG] Loading profile in EditorScreen...")
+                controller.loadProfile()
+                println("[DEBUG_LOG] Profile loaded in EditorScreen: ${controller.state.profile}")
+            } catch (e: Exception) {
+                println("[ERROR_LOG] Failed to load profile in EditorScreen: ${e.message}")
+            } finally {
+                isLoadingProfile = false
+            }
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -350,43 +362,99 @@ fun EditorScreen(
         if (isReadOnly && attachments.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             Text("Вложения", style = MaterialTheme.typography.titleMedium)
-            attachments.forEach { url ->
-                Text(url, color = MaterialTheme.colorScheme.primary)
+            attachments.forEach { key ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(key, modifier = Modifier.weight(1f), maxLines = 1)
+                    Button(onClick = {
+                        val url = controller.getDownloadUrl(currentWillId!!, key)
+                        downloadFile(url, key)
+                    }) {
+                        Text("Скачать")
+                    }
+                }
             }
         }
         
         if (!isReadOnly) {
             Spacer(Modifier.height(16.dp))
 
-            if (profile?.isSubscribed == true) {
+            val profileLoaded = profile != null
+            if (profileLoaded && profile.isSubscribed) {
                 Text("Вложения", style = MaterialTheme.typography.titleMedium)
-                attachments.forEach { url ->
+
+                // Уже загруженные вложения (ключи из БД)
+                attachments.forEach { key ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(url, modifier = Modifier.weight(1f), maxLines = 1)
-                        IconButton(onClick = { attachments = attachments - url }) {
+                        Text(key, modifier = Modifier.weight(1f), maxLines = 1)
+                        IconButton(onClick = { attachments = attachments - key }) {
                             Text("❌")
                         }
                     }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextField(
-                        value = attachmentUrl,
-                        onValueChange = { attachmentUrl = it },
-                        label = { Text("URL медиа (фото/видео/аудио)") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Button(onClick = {
-                        if (attachmentUrl.isNotBlank()) {
-                            attachments = attachments + attachmentUrl
-                            attachmentUrl = ""
+
+                // Новые выбранные файлы
+                selectedFiles.forEach { file ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "📄 ${file.name} (новое)",
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        IconButton(onClick = { selectedFiles = selectedFiles - file }) {
+                            Text("❌")
                         }
-                    }) {
-                        Text("Добавить")
+                    }
+                }
+
+                // Секция добавления вложений
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Button(
+                        onClick = {
+                            openFilePicker { newFiles ->
+                                selectedFiles = (selectedFiles + newFiles).distinctBy { it.name }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("📎 Выбрать файлы для вложения")
                     }
                 }
                 Spacer(Modifier.height(8.dp))
+            } else if (profileLoaded) {
+                // Неактивная область для вложений
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp)
+                        .padding(vertical = 8.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text("Вложения доступны только по подписке", color = MaterialTheme.colorScheme.secondary)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            } else if (isLoadingProfile) {
+                Text("Загрузка данных профиля...", color = MaterialTheme.colorScheme.secondary)
+                Spacer(Modifier.height(8.dp))
             } else {
-                Text("Вложения доступны только по подписке", color = MaterialTheme.colorScheme.secondary)
+                // Если профиль не загрузился, пытаемся загрузить автоматически в LaunchedEffect,
+                // но если совсем беда - показываем сообщение.
+                Text("Не удалось загрузить данные профиля", color = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.height(8.dp))
             }
 
@@ -394,15 +462,16 @@ fun EditorScreen(
                 onClick = {
                     scope.launch {
                         val res = if (currentWillId == null) {
-                            controller.createWill(title, content, attachments)
+                            controller.createWill(title, content, attachments, selectedFiles)
                         } else {
-                            controller.updateWill(currentWillId!!, title, content, attachments)
+                            controller.updateWill(currentWillId!!, title, content, attachments, selectedFiles)
                         }
                         if (res != null) {
                             showSnackbar("Saved")
                             currentWillId = res.id
                             allowedEmails = res.allowedEmails
                             attachments = res.attachments
+                            selectedFiles = emptyList() // Очищаем список новых файлов после успешного сохранения
                         } else {
                             showSnackbar("Error saving")
                         }

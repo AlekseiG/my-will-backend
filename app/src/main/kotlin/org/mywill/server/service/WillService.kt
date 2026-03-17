@@ -6,6 +6,7 @@ import org.mywill.server.repository.UserRepository
 import org.mywill.server.repository.WillRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.*
 
 /**
  * Сервис для работы с завещаниями.
@@ -13,7 +14,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class WillService(
     private val willRepository: WillRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val s3Service: S3Service
 ) {
 
     /**
@@ -76,19 +78,27 @@ class WillService(
         userEmail: String,
         title: String,
         content: String,
-        attachments: List<String> = emptyList()
+        attachments: List<String> = emptyList(),
+        fileMap: Map<String, ByteArray> = emptyMap()
     ): WillDto {
         val user = userRepository.findByEmail(userEmail) ?: throw RuntimeException("User not found")
 
-        if (attachments.isNotEmpty() && !user.isSubscribed) {
+        if ((attachments.isNotEmpty() || fileMap.isNotEmpty()) && !user.isSubscribed) {
             throw RuntimeException("Attachments are only available for subscribed users")
+        }
+
+        val finalAttachments = attachments.toMutableList()
+        fileMap.forEach { (fileName, data) ->
+            val key = "${UUID.randomUUID()}-$fileName"
+            s3Service.uploadFile(key, data, null)
+            finalAttachments.add(key)
         }
 
         val will = Will(
             owner = user,
             title = title,
             content = content,
-            attachments = attachments.toMutableList()
+            attachments = finalAttachments
         )
         val savedWill = willRepository.save(will)
         return savedWill.toDto()
@@ -100,7 +110,8 @@ class WillService(
      * @param userEmail Email пользователя, пытающегося обновить завещание.
      * @param title Новый заголовок.
      * @param content Новое содержимое.
-     * @param attachments Новый список URL вложений.
+     * @param attachments Новый список URL вложений (ключей в S3).
+     * @param fileMap Новые файлы для загрузки.
      * @return DTO обновленного завещания.
      * @throws RuntimeException если завещание не найдено, пользователь не является владельцем или добавлены вложения без подписки.
      */
@@ -110,21 +121,58 @@ class WillService(
         userEmail: String,
         title: String,
         content: String,
-        attachments: List<String> = emptyList()
+        attachments: List<String> = emptyList(),
+        fileMap: Map<String, ByteArray> = emptyMap()
     ): WillDto {
         val will = willRepository.findById(id).orElseThrow { RuntimeException("Will not found") }
         if (will.owner.email != userEmail) {
             throw RuntimeException("Only owner can update will")
         }
 
-        if (attachments.isNotEmpty() && !will.owner.isSubscribed) {
+        if ((attachments.isNotEmpty() || fileMap.isNotEmpty()) && !will.owner.isSubscribed) {
             throw RuntimeException("Attachments are only available for subscribed users")
+        }
+
+        // Удаляем файлы, которых больше нет в списке
+        val removedFiles = will.attachments.filter { it !in attachments && it !in fileMap.keys }
+        removedFiles.forEach { key ->
+            try {
+                s3Service.deleteFile(key)
+            } catch (e: Exception) {
+                // Ignore if already deleted or not found
+            }
+        }
+
+        val finalAttachments = attachments.toMutableList()
+        fileMap.forEach { (fileName, data) ->
+            val key = "${UUID.randomUUID()}-$fileName"
+            s3Service.uploadFile(key, data, null)
+            finalAttachments.add(key)
         }
 
         will.title = title
         will.content = content
-        will.attachments = attachments.toMutableList()
+        will.attachments = finalAttachments
         return willRepository.save(will).toDto()
+    }
+
+    /**
+     * Загружает файл из S3.
+     */
+    @Transactional(readOnly = true)
+    fun downloadAttachment(id: Long, key: String, userEmail: String): ByteArray {
+        val will = willRepository.findById(id).orElseThrow { RuntimeException("Will not found") }
+        val owner = will.owner
+        if (owner.email != userEmail && !will.allowedEmails.contains(userEmail)) {
+            throw RuntimeException("Access denied")
+        }
+        if (owner.email != userEmail && !owner.isDead) {
+            throw RuntimeException("Will is not yet opened")
+        }
+        if (!will.attachments.contains(key)) {
+            throw RuntimeException("File not found in this will")
+        }
+        return s3Service.downloadFile(key)
     }
 
     /**

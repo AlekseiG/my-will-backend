@@ -1,6 +1,8 @@
 package org.mywill.client
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 /**
  * Общее состояние клиентского приложения, доступное на всех платформах.
@@ -38,11 +40,24 @@ class AppState {
         private set
 
     /**
+     * Профиль текущего пользователя.
+     */
+    var profile: ProfileDto? by mutableStateOf(null)
+        private set
+
+    /**
      * Устанавливает состояние авторизации и токен.
      */
     fun setAuthorized(token: String?) {
         this.token = token
         this.isAuthorized = !token.isNullOrBlank()
+        if (token.isNullOrBlank()) {
+            this.profile = null
+        }
+    }
+
+    fun updateProfile(profile: ProfileDto?) {
+        this.profile = profile
     }
 
     fun setMessage(message: String?) {

@@ -2,6 +2,7 @@ package org.mywill.client
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.mywill.client.ui.SelectedFile
 
 /**
  * Общий контроллер, инкапсулирующий работу с ApiClient и ведение состояния.
@@ -83,26 +84,35 @@ class AppController(
         api.getWill(id)
     }
 
-    suspend fun createWill(title: String, content: String, attachments: List<String> = emptyList()): WillDto? =
-        safeNullableCall {
-            api.createWill(CreateWillRequest(title, content, attachments))
+    suspend fun createWill(
+        title: String,
+        content: String,
+        attachments: List<String> = emptyList(),
+        files: List<SelectedFile> = emptyList()
+    ): WillDto? = safeNullableCall {
+        api.createWill(title, content, attachments, files)
     }
 
     suspend fun updateWill(
         id: Long,
         title: String,
         content: String,
-        attachments: List<String> = emptyList()
+        attachments: List<String> = emptyList(),
+        files: List<SelectedFile> = emptyList()
     ): WillDto? = safeNullableCall {
-        api.updateWill(id, UpdateWillRequest(title, content, attachments))
+        api.updateWill(id, title, content, attachments, files)
     }
+
+    fun getDownloadUrl(willId: Long, key: String): String = api.getDownloadUrl(willId, key)
 
     suspend fun addAccess(id: Long, email: String): WillDto? = safeNullableCall {
         api.addAccess(id, AddAccessRequest(email))
     }
 
     suspend fun loadProfile(): ProfileDto? = safeNullableCall {
-        api.getProfile()
+        api.getProfile().also {
+            state.updateProfile(it)
+        }
     }
 
     suspend fun updateProfile(avatarUrl: String?, deathTimeoutSeconds: Long?): ProfileDto? = safeNullableCall {

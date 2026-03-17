@@ -1,9 +1,11 @@
 package org.mywill.server.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.mail.SimpleMailMessage
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.stereotype.Service
 
+private val logger = KotlinLogging.logger {}
 /**
  * Сервис для отправки электронных писем.
  */
@@ -46,5 +48,6 @@ class EmailServiceImpl(private val mailSender: JavaMailSender) : EmailService {
         message.subject = subject
         message.text = text
         mailSender.send(message)
+        logger.info { "Sent email to $to with subject '$subject'" }
     }
 }
