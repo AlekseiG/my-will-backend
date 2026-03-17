@@ -1,5 +1,6 @@
 package org.mywill.server.service
 
+import org.mywill.server.controller.dto.AttachmentDto
 import org.mywill.server.controller.dto.WillDto
 import org.mywill.server.entity.Will
 import org.mywill.server.repository.UserRepository
@@ -78,7 +79,7 @@ class WillService(
         userEmail: String,
         title: String,
         content: String,
-        attachments: List<String> = emptyList(),
+        attachments: List<AttachmentDto> = emptyList(),
         fileMap: Map<String, ByteArray> = emptyMap()
     ): WillDto {
         val user = userRepository.findByEmail(userEmail) ?: throw RuntimeException("User not found")
@@ -87,11 +88,11 @@ class WillService(
             throw RuntimeException("Attachments are only available for subscribed users")
         }
 
-        val finalAttachments = attachments.toMutableList()
+        val finalAttachments = attachments.associate { it.key to it.name }.toMutableMap()
         fileMap.forEach { (fileName, data) ->
             val key = "${UUID.randomUUID()}-$fileName"
             s3Service.uploadFile(key, data, null)
-            finalAttachments.add(key)
+            finalAttachments[key] = fileName
         }
 
         val will = Will(
@@ -121,7 +122,7 @@ class WillService(
         userEmail: String,
         title: String,
         content: String,
-        attachments: List<String> = emptyList(),
+        attachments: List<AttachmentDto> = emptyList(),
         fileMap: Map<String, ByteArray> = emptyMap()
     ): WillDto {
         val will = willRepository.findById(id).orElseThrow { RuntimeException("Will not found") }
@@ -133,9 +134,11 @@ class WillService(
             throw RuntimeException("Attachments are only available for subscribed users")
         }
 
-        // Удаляем файлы, которых больше нет в списке
-        val removedFiles = will.attachments.filter { it !in attachments && it !in fileMap.keys }
-        removedFiles.forEach { key ->
+        // Удаляем файлы, которых больше нет в новом списке
+        val newKeys = attachments.map { it.key }.toSet()
+        val removedKeys = will.attachments.keys.filter { it !in newKeys }
+
+        removedKeys.forEach { key ->
             try {
                 s3Service.deleteFile(key)
             } catch (e: Exception) {
@@ -143,11 +146,11 @@ class WillService(
             }
         }
 
-        val finalAttachments = attachments.toMutableList()
+        val finalAttachments = attachments.associate { it.key to it.name }.toMutableMap()
         fileMap.forEach { (fileName, data) ->
             val key = "${UUID.randomUUID()}-$fileName"
             s3Service.uploadFile(key, data, null)
-            finalAttachments.add(key)
+            finalAttachments[key] = fileName
         }
 
         will.title = title
@@ -169,7 +172,7 @@ class WillService(
         if (owner.email != userEmail && !owner.isDead) {
             throw RuntimeException("Will is not yet opened")
         }
-        if (!will.attachments.contains(key)) {
+        if (!will.attachments.containsKey(key)) {
             throw RuntimeException("File not found in this will")
         }
         return s3Service.downloadFile(key)
@@ -194,5 +197,12 @@ class WillService(
         return willRepository.save(will).toDto()
     }
 
-    private fun Will.toDto() = WillDto(id, title, content, owner.email, allowedEmails, attachments)
+    private fun Will.toDto() = WillDto(
+        id = id,
+        title = title,
+        content = content,
+        ownerEmail = owner.email,
+        allowedEmails = allowedEmails,
+        attachments = attachments.map { (key, name) -> AttachmentDto(key, name) }
+    )
 }

@@ -3,6 +3,17 @@ package org.mywill.server.controller.dto
 import io.swagger.v3.oas.annotations.media.Schema
 
 /**
+ * Объект передачи данных для вложения.
+ */
+@Schema(description = "Данные вложения")
+data class AttachmentDto(
+    @Schema(description = "Ключ в S3")
+    val key: String,
+    @Schema(description = "Оригинальное имя файла")
+    val name: String
+)
+
+/**
  * Объект передачи данных для завещания.
  */
 @Schema(description = "Данные завещания")
@@ -17,8 +28,8 @@ data class WillDto(
     val ownerEmail: String = "",
     @Schema(description = "Список email, которым разрешен доступ")
     val allowedEmails: Set<String> = emptySet(),
-    @Schema(description = "Список URL вложений")
-    val attachments: List<String> = emptyList()
+    @Schema(description = "Список вложений")
+    val attachments: List<AttachmentDto> = emptyList()
 )
 
 /**
@@ -30,8 +41,8 @@ data class CreateWillRequest(
     val title: String,
     @Schema(description = "Содержимое")
     val content: String,
-    @Schema(description = "Список URL вложений")
-    val attachments: List<String> = emptyList()
+    @Schema(description = "Список вложений")
+    val attachments: List<AttachmentDto> = emptyList()
 )
 
 /**
@@ -43,8 +54,8 @@ data class UpdateWillRequest(
     val title: String,
     @Schema(description = "Содержимое")
     val content: String,
-    @Schema(description = "Список URL вложений")
-    val attachments: List<String> = emptyList()
+    @Schema(description = "Список вложений")
+    val attachments: List<AttachmentDto> = emptyList()
 )
 
 /**

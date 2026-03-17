@@ -87,7 +87,7 @@ class AppController(
     suspend fun createWill(
         title: String,
         content: String,
-        attachments: List<String> = emptyList(),
+        attachments: List<AttachmentDto> = emptyList(),
         files: List<SelectedFile> = emptyList()
     ): WillDto? = safeNullableCall {
         api.createWill(title, content, attachments, files)
@@ -97,13 +97,17 @@ class AppController(
         id: Long,
         title: String,
         content: String,
-        attachments: List<String> = emptyList(),
+        attachments: List<AttachmentDto> = emptyList(),
         files: List<SelectedFile> = emptyList()
     ): WillDto? = safeNullableCall {
         api.updateWill(id, title, content, attachments, files)
     }
 
     fun getDownloadUrl(willId: Long, key: String): String = api.getDownloadUrl(willId, key)
+
+    suspend fun downloadFile(url: String): ByteArray? = safeNullableCall {
+        api.downloadFile(url)
+    }
 
     suspend fun addAccess(id: Long, email: String): WillDto? = safeNullableCall {
         api.addAccess(id, AddAccessRequest(email))

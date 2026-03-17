@@ -359,17 +359,25 @@ fun EditorScreen(
             readOnly = isReadOnly
         )
 
-        if (isReadOnly && attachments.isNotEmpty()) {
+        if (attachments.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
             Text("Вложения", style = MaterialTheme.typography.titleMedium)
-            attachments.forEach { key ->
+            attachments.forEach { attachment ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(key, modifier = Modifier.weight(1f), maxLines = 1)
+                    Text(attachment.name, modifier = Modifier.weight(1f), maxLines = 1)
                     Button(onClick = {
-                        val url = controller.getDownloadUrl(currentWillId!!, key)
-                        downloadFile(url, key)
+                        scope.launch {
+                            val url = controller.getDownloadUrl(currentWillId!!, attachment.key)
+                            val bytes = if (currentWillId != null) controller.downloadFile(url) else null
+                            downloadFile(url, attachment.name, bytes)
+                        }
                     }) {
                         Text("Скачать")
+                    }
+                    if (!isReadOnly) {
+                        IconButton(onClick = { attachments = attachments - attachment }) {
+                            Text("❌")
+                        }
                     }
                 }
             }
@@ -380,18 +388,6 @@ fun EditorScreen(
 
             val profileLoaded = profile != null
             if (profileLoaded && profile.isSubscribed) {
-                Text("Вложения", style = MaterialTheme.typography.titleMedium)
-
-                // Уже загруженные вложения (ключи из БД)
-                attachments.forEach { key ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(key, modifier = Modifier.weight(1f), maxLines = 1)
-                        IconButton(onClick = { attachments = attachments - key }) {
-                            Text("❌")
-                        }
-                    }
-                }
-
                 // Новые выбранные файлы
                 selectedFiles.forEach { file ->
                     Row(verticalAlignment = Alignment.CenterVertically) {

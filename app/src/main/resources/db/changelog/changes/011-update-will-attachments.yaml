@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-update-will-attachments
+      author: junie
+      changes:
+        - dropColumn:
+            tableName: will_attachments
+            columnName: url
+        - addColumn:
+            tableName: will_attachments
+            columns:
+              - column:
+                  name: s3_key
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: original_name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false

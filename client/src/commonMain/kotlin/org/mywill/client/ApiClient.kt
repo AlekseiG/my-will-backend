@@ -178,7 +178,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
     suspend fun createWill(
         title: String,
         content: String,
-        attachments: List<String>,
+        attachments: List<AttachmentDto>,
         files: List<SelectedFile>
     ): WillDto? {
         return try {
@@ -187,7 +187,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 formData = formData {
                     append("title", title)
                     append("content", content)
-                    attachments.forEach { append("attachments", it) }
+                    if (attachments.isNotEmpty()) {
+                        append("attachments", json.encodeToString(attachments))
+                    }
                     files.forEach { file ->
                         append("files", file.bytes, Headers.build {
                             append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
@@ -213,7 +215,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
         id: Long,
         title: String,
         content: String,
-        attachments: List<String>,
+        attachments: List<AttachmentDto>,
         files: List<SelectedFile>
     ): WillDto? {
         return try {
@@ -222,7 +224,9 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 formData = formData {
                     append("title", title)
                     append("content", content)
-                    attachments.forEach { append("attachments", it) }
+                    if (attachments.isNotEmpty()) {
+                        append("attachments", json.encodeToString(attachments))
+                    }
                     files.forEach { file ->
                         append("files", file.bytes, Headers.build {
                             append(HttpHeaders.ContentDisposition, "filename=\"${file.name}\"")
@@ -244,6 +248,23 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
 
     fun getDownloadUrl(willId: Long, key: String): String {
         return "$baseUrl/api/will/$willId/attachment/$key"
+    }
+
+    /**
+     * Загружает файл по указанному URL.
+     */
+    suspend fun downloadFile(url: String): ByteArray? {
+        return try {
+            val response: HttpResponse = client.get(url) {
+                withCredentials()
+            }
+            if (response.status == HttpStatusCode.OK) {
+                response.readBytes()
+            } else null
+        } catch (e: Exception) {
+            println("[ERROR_LOG] Download failed: ${e.message}")
+            null
+        }
     }
 
     /**

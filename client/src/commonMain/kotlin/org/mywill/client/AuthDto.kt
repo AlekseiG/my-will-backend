@@ -35,6 +35,15 @@ data class VerifyRequest(
 )
 
 /**
+ * Данные вложения.
+ */
+@Serializable
+data class AttachmentDto(
+    val key: String,
+    val name: String
+)
+
+/**
  * Объект передачи данных (DTO) для завещания.
  */
 @Serializable
@@ -44,7 +53,7 @@ data class WillDto(
     val content: String = "",
     val ownerEmail: String = "",
     val allowedEmails: Set<String> = emptySet(),
-    val attachments: List<String> = emptyList()
+    val attachments: List<AttachmentDto> = emptyList()
 )
 
 /**
@@ -54,7 +63,7 @@ data class WillDto(
 data class CreateWillRequest(
     val title: String,
     val content: String,
-    val attachments: List<String> = emptyList()
+    val attachments: List<AttachmentDto> = emptyList()
 )
 
 /**
@@ -64,7 +73,7 @@ data class CreateWillRequest(
 data class UpdateWillRequest(
     val title: String,
     val content: String,
-    val attachments: List<String> = emptyList()
+    val attachments: List<AttachmentDto> = emptyList()
 )
 
 /**

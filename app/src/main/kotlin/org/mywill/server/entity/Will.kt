@@ -26,6 +26,7 @@ class Will(
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "will_attachments", joinColumns = [JoinColumn(name = "will_id")])
-    @Column(name = "url")
-    var attachments: MutableList<String> = mutableListOf()
+    @MapKeyColumn(name = "s3_key")
+    @Column(name = "original_name")
+    var attachments: MutableMap<String, String> = mutableMapOf()
 )

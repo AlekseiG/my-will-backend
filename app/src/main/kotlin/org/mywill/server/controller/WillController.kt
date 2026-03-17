@@ -1,9 +1,11 @@
 package org.mywill.server.controller
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.mywill.server.controller.dto.AddAccessRequest
+import org.mywill.server.controller.dto.AttachmentDto
 import org.mywill.server.controller.dto.WillDto
 import org.mywill.server.service.WillService
 import org.springframework.http.HttpHeaders
@@ -18,7 +20,10 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/api/will")
 @Tag(name = "Will", description = "Управление завещаниями")
-class WillController(private val willService: WillService) {
+class WillController(
+    private val willService: WillService,
+    private val objectMapper: ObjectMapper
+) {
 
     @GetMapping
     @Operation(summary = "Получает список всех завещаний текущего авторизованного пользователя.")
@@ -44,12 +49,18 @@ class WillController(private val willService: WillService) {
     fun createWill(
         @RequestPart("title") title: String,
         @RequestPart("content") content: String,
-        @RequestPart("attachments", required = false) attachments: List<String>?,
+        @RequestPart("attachments", required = false) attachmentsJson: String?,
         @RequestPart("files", required = false) files: List<MultipartFile>?,
         principal: Principal
     ): WillDto {
+        val attachments: List<AttachmentDto> = if (!attachmentsJson.isNullOrBlank()) {
+            objectMapper.readValue(
+                attachmentsJson,
+                objectMapper.typeFactory.constructCollectionType(List::class.java, AttachmentDto::class.java)
+            )
+        } else emptyList()
         val fileMap = files?.associate { it.originalFilename!! to it.bytes } ?: emptyMap()
-        return willService.createWill(principal.name, title, content, attachments ?: emptyList(), fileMap)
+        return willService.createWill(principal.name, title, content, attachments, fileMap)
     }
 
     @PutMapping("/{id}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -58,12 +69,18 @@ class WillController(private val willService: WillService) {
         @PathVariable id: Long,
         @RequestPart("title") title: String,
         @RequestPart("content") content: String,
-        @RequestPart("attachments", required = false) attachments: List<String>?,
+        @RequestPart("attachments", required = false) attachmentsJson: String?,
         @RequestPart("files", required = false) files: List<MultipartFile>?,
         principal: Principal
     ): WillDto {
+        val attachments: List<AttachmentDto> = if (!attachmentsJson.isNullOrBlank()) {
+            objectMapper.readValue(
+                attachmentsJson,
+                objectMapper.typeFactory.constructCollectionType(List::class.java, AttachmentDto::class.java)
+            )
+        } else emptyList()
         val fileMap = files?.associate { it.originalFilename!! to it.bytes } ?: emptyMap()
-        return willService.updateWill(id, principal.name, title, content, attachments ?: emptyList(), fileMap)
+        return willService.updateWill(id, principal.name, title, content, attachments, fileMap)
     }
 
     @GetMapping("/{id}/attachment/{key}")

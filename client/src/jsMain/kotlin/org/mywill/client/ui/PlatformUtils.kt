@@ -48,11 +48,24 @@ actual fun openFilePicker(onFilesSelected: (List<SelectedFile>) -> Unit) {
 /**
  * Реализация скачивания файла для браузера (JS).
  */
-actual fun downloadFile(url: String, fileName: String) {
-    val anchor = document.createElement("a") as HTMLAnchorElement
-    anchor.href = url
-    anchor.download = fileName
-    anchor.click()
+actual fun downloadFile(url: String, fileName: String, bytes: ByteArray?) {
+    if (bytes != null) {
+        // Если байты предоставлены (уже скачаны с авторизацией), создаем Blob
+        // В Kotlin/JS ByteArray - это Int8Array. Blob понимает его.
+        val blob = org.w3c.files.Blob(arrayOf(bytes), org.w3c.files.BlobPropertyBag(type = "application/octet-stream"))
+        val blobUrl = org.w3c.dom.url.URL.createObjectURL(blob)
+        val anchor = document.createElement("a") as HTMLAnchorElement
+        anchor.href = blobUrl
+        anchor.download = fileName
+        anchor.click()
+        org.w3c.dom.url.URL.revokeObjectURL(blobUrl)
+    } else {
+        // Иначе обычное скачивание (может не работать, если нужен Bearer)
+        val anchor = document.createElement("a") as HTMLAnchorElement
+        anchor.href = url
+        anchor.download = fileName
+        anchor.click()
+    }
 }
 
 private fun Int8Array(buffer: org.khronos.webgl.ArrayBuffer): ByteArray {
