@@ -3,6 +3,14 @@ package org.mywill.client.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Handshake
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -59,7 +67,7 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
                                 isSharedMode = false
                                 currentScreen = Screen.List 
                             },
-                            icon = { Text("M") },
+                            icon = { Icon(Icons.Default.Home, contentDescription = null) },
                             label = { Text("Мои") }
                         )
                         NavigationBarItem(
@@ -68,7 +76,7 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
                                 isSharedMode = true
                                 currentScreen = Screen.List 
                             },
-                            icon = { Text("S") },
+                            icon = { Icon(Icons.Default.Handshake, contentDescription = null) },
                             label = { Text("Чужие") }
                         )
                         NavigationBarItem(
@@ -77,19 +85,19 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
                                 currentWill = null
                                 currentScreen = Screen.Editor 
                             },
-                            icon = { Text("+") },
+                            icon = { Icon(Icons.Default.Add, contentDescription = null) },
                             label = { Text("Новое") }
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Profile,
                             onClick = { currentScreen = Screen.Profile },
-                            icon = { Text("P") },
+                            icon = { Icon(Icons.Default.Person, contentDescription = null) },
                             label = { Text("Профиль") }
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Trusted,
                             onClick = { currentScreen = Screen.Trusted },
-                            icon = { Text("T") },
+                            icon = { Icon(Icons.Default.Security, contentDescription = null) },
                             label = { Text("Доверенные") }
                         )
                     }
@@ -376,7 +384,7 @@ fun EditorScreen(
                     }
                     if (!isReadOnly) {
                         IconButton(onClick = { attachments = attachments - attachment }) {
-                            Text("❌")
+                            Icon(Icons.Default.Delete, contentDescription = "Удалить")
                         }
                     }
                 }
@@ -392,13 +400,13 @@ fun EditorScreen(
                 selectedFiles.forEach { file ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "📄 ${file.name} (новое)",
+                            file.name + " (новое)",
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
                             color = MaterialTheme.colorScheme.primary
                         )
                         IconButton(onClick = { selectedFiles = selectedFiles - file }) {
-                            Text("❌")
+                            Icon(Icons.Default.Delete, contentDescription = "Удалить")
                         }
                     }
                 }
@@ -417,7 +425,9 @@ fun EditorScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("📎 Выбрать файлы для вложения")
+                        Icon(Icons.Default.AttachFile, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Выбрать файлы для вложения")
                     }
                 }
                 Spacer(Modifier.height(8.dp))
