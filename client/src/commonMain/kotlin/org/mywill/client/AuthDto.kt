@@ -90,11 +90,11 @@ data class ProfileDto(
     val avatarUrl: String? = null,
     @SerialName("deathTimeoutSeconds")
     val deathTimeoutSeconds: Long,
-    @SerialName("dead")
+    @SerialName("isDead")
     val isDead: Boolean,
     @SerialName("deathConfirmedAt")
     val deathConfirmedAt: String? = null,
-    @SerialName("subscribed")
+    @SerialName("isSubscribed")
     val isSubscribed: Boolean = false
 )
 

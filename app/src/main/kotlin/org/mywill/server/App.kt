@@ -5,13 +5,13 @@ import org.springframework.boot.runApplication
 import org.springframework.cloud.openfeign.EnableFeignClients
 import org.springframework.context.annotation.Bean
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing
-import org.springframework.scheduling.annotation.EnableScheduling
-import org.springframework.web.servlet.config.annotation.CorsRegistry
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.scheduling.annotation.EnableScheduling
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.servlet.config.annotation.CorsRegistry
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 
 
 @SpringBootApplication
@@ -41,7 +41,8 @@ class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException::class)
     fun handleRuntimeException(e: RuntimeException): ResponseEntity<Map<String, String>> {
         val status = when (e.message) {
-            "Access denied", "Only owner can update will", "Only owner can add access", "Will is not yet opened", "You are not a trusted person for this user" -> HttpStatus.FORBIDDEN
+            "Access denied", "Only owner can update will", "Only owner can add access", "Will is not yet opened", "You are not a trusted person for this user",
+            "Attachments are only available for subscribed users" -> HttpStatus.FORBIDDEN
             "Cannot add yourself" -> HttpStatus.BAD_REQUEST
             "User not found", "Will not found", "Owner not found", "Trusted person not found" -> HttpStatus.NOT_FOUND
             else -> HttpStatus.INTERNAL_SERVER_ERROR

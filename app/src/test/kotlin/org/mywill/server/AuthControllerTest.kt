@@ -30,8 +30,6 @@ class AuthControllerTest : BaseIntegrationTest() {
         fun emailService(): EmailService = mock(EmailService::class.java)
     }
 
-@Autowired
-    private lateinit var userRepository: UserRepository
 
     @Autowired
     private lateinit var emailService: EmailService

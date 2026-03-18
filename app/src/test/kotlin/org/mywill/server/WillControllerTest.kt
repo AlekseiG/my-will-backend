@@ -3,8 +3,10 @@ package org.mywill.server
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
-import org.mywill.server.controller.dto.*
-import org.mywill.server.repository.UserRepository
+import org.mywill.server.controller.dto.AddAccessRequest
+import org.mywill.server.controller.dto.AttachmentDto
+import org.mywill.server.controller.dto.AuthRequest
+import org.mywill.server.controller.dto.VerifyRequest
 import org.mywill.server.service.EmailService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.TestConfiguration
@@ -14,8 +16,8 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.multipart
 import org.springframework.test.web.servlet.post
-import org.springframework.test.web.servlet.put
 
 
 @ActiveProfiles("test")
@@ -33,9 +35,6 @@ class WillControllerTest : BaseIntegrationTest() {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
-
-    @Autowired
-    private lateinit var userRepository: UserRepository
 
     @Test
     fun testWillLifecycle() {
@@ -75,10 +74,10 @@ class WillControllerTest : BaseIntegrationTest() {
         // 4. Создание первого завещания
         val title1 = "Завещание 1"
         val content1 = "Контент 1"
-        val createResponse1 = mvc.post("/api/will") {
+        val createResponse1 = mvc.multipart("/api/will") {
             header("Authorization", "Bearer $token")
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(CreateWillRequest(title1, content1))
+            file("title", title1.toByteArray())
+            file("content", content1.toByteArray())
         }.andExpect {
             status { isOk() }
             jsonPath("$.title") { value(title1) }
@@ -88,10 +87,10 @@ class WillControllerTest : BaseIntegrationTest() {
         // 5. Создание второго завещания
         val title2 = "Завещание 2"
         val content2 = "Контент 2"
-        mvc.post("/api/will") {
+        mvc.multipart("/api/will") {
             header("Authorization", "Bearer $token")
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(CreateWillRequest(title2, content2))
+            file("title", title2.toByteArray())
+            file("content", content2.toByteArray())
         }.andExpect {
             status { isOk() }
             jsonPath("$.title") { value(title2) }
@@ -165,10 +164,10 @@ class WillControllerTest : BaseIntegrationTest() {
         ).get("token").asText()
 
         // 1. Create will
-        val createRes = mvc.post("/api/will") {
+        val createRes = mvc.multipart("/api/will") {
             header("Authorization", "Bearer $ownerToken")
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(CreateWillRequest("Title", "Content"))
+            file("title", "Title".toByteArray())
+            file("content", "Content".toByteArray())
         }.andReturn()
         val willId = objectMapper.readTree(createRes.response.contentAsString).get("id").asLong()
 
@@ -207,10 +206,14 @@ class WillControllerTest : BaseIntegrationTest() {
         }
 
         // 7. Friend tries to update owner's will (Forbidden)
-        mvc.put("/api/will/$willId") {
+        mvc.multipart("/api/will/$willId") {
             header("Authorization", "Bearer $friendToken")
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(UpdateWillRequest("New Title", "New Content"))
+            with {
+                it.method = "PUT"
+                it
+            }
+            file("title", "New Title".toByteArray())
+            file("content", "New Content".toByteArray())
         }.andExpect {
             status { isForbidden() }
         }
@@ -239,18 +242,16 @@ class WillControllerTest : BaseIntegrationTest() {
         ).get("token").asText()
 
         // 1. Try to create will with attachments without subscription (Should fail)
-        mvc.post("/api/will") {
+        mvc.multipart("/api/will") {
             header("Authorization", "Bearer $token")
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(
-                CreateWillRequest(
-                    "Title",
-                    "Content",
-                    listOf("http://example.com/file.mp4")
-                )
+            file("title", "Title".toByteArray())
+            file("content", "Content".toByteArray())
+            file(
+                "attachments",
+                objectMapper.writeValueAsBytes(listOf(AttachmentDto("key1", "file.mp4")))
             )
         }.andExpect {
-            status { isInternalServerError() } // Based on current Exception handling, it might be 500
+            status { isForbidden() }
         }
 
         // 2. Set user as subscribed
@@ -259,37 +260,42 @@ class WillControllerTest : BaseIntegrationTest() {
         userRepository.save(user)
 
         // 3. Create will with attachments with subscription (Should succeed)
-        val attachments = listOf("http://example.com/video.mp4", "http://example.com/photo.jpg")
-        val createRes = mvc.post("/api/will") {
+        val attachments = listOf(
+            AttachmentDto("key1", "video.mp4"),
+            AttachmentDto("key2", "photo.jpg")
+        )
+        val createRes = mvc.multipart("/api/will") {
             header("Authorization", "Bearer $token")
-            contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(
-                CreateWillRequest(
-                    "Subscribed Title",
-                    "Subscribed Content",
-                    attachments
-                )
-            )
+            file("title", "Subscribed Title".toByteArray())
+            file("content", "Subscribed Content".toByteArray())
+            file("attachments", objectMapper.writeValueAsBytes(attachments))
         }.andExpect {
             status { isOk() }
             jsonPath("$.attachments.length()") { value(2) }
-            jsonPath("$.attachments[0]") { value(attachments[0]) }
-            jsonPath("$.attachments[1]") { value(attachments[1]) }
+            jsonPath("$.attachments[0].key") { value(attachments[0].key) }
+            jsonPath("$.attachments[0].name") { value(attachments[0].name) }
+            jsonPath("$.attachments[1].key") { value(attachments[1].key) }
+            jsonPath("$.attachments[1].name") { value(attachments[1].name) }
         }.andReturn()
 
         val willId = objectMapper.readTree(createRes.response.contentAsString).get("id").asLong()
 
         // 4. Update will with new attachments
-        val newAttachments = listOf("http://example.com/audio.mp3")
-        mvc.put("/api/will/$willId") {
+        val newAttachments = listOf(AttachmentDto("key3", "audio.mp3"))
+        mvc.multipart("/api/will/$willId") {
             header("Authorization", "Bearer $token")
-            contentType = MediaType.APPLICATION_JSON
-            content =
-                objectMapper.writeValueAsString(UpdateWillRequest("Updated Title", "Updated Content", newAttachments))
+            with {
+                it.method = "PUT"
+                it
+            }
+            file("title", "Updated Title".toByteArray())
+            file("content", "Updated Content".toByteArray())
+            file("attachments", objectMapper.writeValueAsBytes(newAttachments))
         }.andExpect {
             status { isOk() }
             jsonPath("$.attachments.length()") { value(1) }
-            jsonPath("$.attachments[0]") { value(newAttachments[0]) }
+            jsonPath("$.attachments[0].key") { value(newAttachments[0].key) }
+            jsonPath("$.attachments[0].name") { value(newAttachments[0].name) }
         }
     }
 }

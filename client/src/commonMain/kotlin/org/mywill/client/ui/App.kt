@@ -3,14 +3,6 @@ package org.mywill.client.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Handshake
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,8 +10,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import mywill.client.generated.resources.*
+import org.jetbrains.compose.resources.painterResource
 import org.mywill.client.AppController
-import org.mywill.client.ProfileDto
 import org.mywill.client.TrustedPersonDto
 import org.mywill.client.WillDto
 
@@ -40,8 +33,14 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
     
     // Переходим на основной экран, если уже авторизованы (например, пришел токен из URL)
     LaunchedEffect(controller.state.isAuthorized) {
-        if (controller.state.isAuthorized && currentScreen == Screen.Auth) {
-            currentScreen = Screen.List
+        if (controller.state.isAuthorized) {
+            if (currentScreen == Screen.Auth) {
+                currentScreen = Screen.List
+            }
+            // Подгружаем профиль один раз при авторизации
+            if (controller.state.profile == null) {
+                controller.loadProfile()
+            }
         }
     }
 
@@ -67,7 +66,7 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
                                 isSharedMode = false
                                 currentScreen = Screen.List 
                             },
-                            icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                            icon = { Icon(painterResource(Res.drawable.home), contentDescription = null) },
                             label = { Text("Мои") }
                         )
                         NavigationBarItem(
@@ -76,7 +75,7 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
                                 isSharedMode = true
                                 currentScreen = Screen.List 
                             },
-                            icon = { Icon(Icons.Default.Handshake, contentDescription = null) },
+                            icon = { Icon(painterResource(Res.drawable.handshake), contentDescription = null) },
                             label = { Text("Чужие") }
                         )
                         NavigationBarItem(
@@ -85,19 +84,19 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
                                 currentWill = null
                                 currentScreen = Screen.Editor 
                             },
-                            icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                            icon = { Icon(painterResource(Res.drawable.add), contentDescription = null) },
                             label = { Text("Новое") }
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Profile,
                             onClick = { currentScreen = Screen.Profile },
-                            icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                            icon = { Icon(painterResource(Res.drawable.person), contentDescription = null) },
                             label = { Text("Профиль") }
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Trusted,
                             onClick = { currentScreen = Screen.Trusted },
-                            icon = { Icon(Icons.Default.Security, contentDescription = null) },
+                            icon = { Icon(painterResource(Res.drawable.security), contentDescription = null) },
                             label = { Text("Доверенные") }
                         )
                     }
@@ -331,22 +330,32 @@ fun EditorScreen(
     var selectedFiles by remember { mutableStateOf(emptyList<SelectedFile>()) }
     var accessEmail by remember { mutableStateOf("") }
     var isLoadingProfile by remember { mutableStateOf(false) }
+    var profileLoadError by remember { mutableStateOf(false) }
+    var initialLoadDone by remember { mutableStateOf(false) }
 
-    val profile = controller.state.profile
+    val currentProfile = controller.state.profile
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        if (profile == null) {
+        if (currentProfile == null) {
             isLoadingProfile = true
+            profileLoadError = false
             try {
                 println("[DEBUG_LOG] Loading profile in EditorScreen...")
-                controller.loadProfile()
-                println("[DEBUG_LOG] Profile loaded in EditorScreen: ${controller.state.profile}")
+                val res = controller.loadProfile()
+                if (res == null) {
+                    profileLoadError = true
+                }
+                println("[DEBUG_LOG] Profile loaded in EditorScreen: $res")
             } catch (e: Exception) {
                 println("[ERROR_LOG] Failed to load profile in EditorScreen: ${e.message}")
+                profileLoadError = true
             } finally {
                 isLoadingProfile = false
+                initialLoadDone = true
             }
+        } else {
+            initialLoadDone = true
         }
     }
 
@@ -384,7 +393,7 @@ fun EditorScreen(
                     }
                     if (!isReadOnly) {
                         IconButton(onClick = { attachments = attachments - attachment }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Удалить")
+                            Icon(painterResource(Res.drawable.delete), contentDescription = "Удалить")
                         }
                     }
                 }
@@ -394,8 +403,9 @@ fun EditorScreen(
         if (!isReadOnly) {
             Spacer(Modifier.height(16.dp))
 
-            val profileLoaded = profile != null
-            if (profileLoaded && profile.isSubscribed) {
+            // Секция вложений (доступна по подписке)
+            val profileLoaded = currentProfile != null
+            if (profileLoaded && currentProfile.isSubscribed) {
                 // Новые выбранные файлы
                 selectedFiles.forEach { file ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -406,7 +416,7 @@ fun EditorScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
                         IconButton(onClick = { selectedFiles = selectedFiles - file }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Удалить")
+                            Icon(painterResource(Res.drawable.delete), contentDescription = "Удалить")
                         }
                     }
                 }
@@ -425,42 +435,60 @@ fun EditorScreen(
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.AttachFile, contentDescription = null)
+                        Icon(painterResource(Res.drawable.attach_file), contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Выбрать файлы для вложения")
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-            } else if (profileLoaded) {
-                // Неактивная область для вложений
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp)
-                        .padding(vertical = 8.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text("Вложения доступны только по подписке", color = MaterialTheme.colorScheme.secondary)
                     }
                 }
                 Spacer(Modifier.height(8.dp))
             } else if (isLoadingProfile) {
                 Text("Загрузка данных профиля...", color = MaterialTheme.colorScheme.secondary)
                 Spacer(Modifier.height(8.dp))
-            } else {
-                // Если профиль не загрузился, пытаемся загрузить автоматически в LaunchedEffect,
-                // но если совсем беда - показываем сообщение.
-                Text("Не удалось загрузить данные профиля", color = MaterialTheme.colorScheme.error)
+            } else if (profileLoadError && !profileLoaded) {
+                // Если профиль не загрузился, показываем кнопку повтора
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "Не удалось загрузить данные профиля для проверки подписки",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Button(onClick = {
+                        scope.launch {
+                            isLoadingProfile = true
+                            profileLoadError = false
+                            try {
+                                val res = controller.loadProfile()
+                                if (res == null) {
+                                    profileLoadError = true
+                                }
+                            } catch (e: Exception) {
+                                profileLoadError = true
+                            } finally {
+                                isLoadingProfile = false
+                                initialLoadDone = true
+                            }
+                        }
+                    }, modifier = Modifier.height(32.dp)) {
+                        Text("Попробовать снова", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            } else if (!initialLoadDone) {
+                // Если профиль ещё не загружен и нет ошибки (в процессе первого запроса), показываем текст ожидания
+                Text("Проверка подписки...", style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(8.dp))
+            } else if (!profileLoaded) {
+                // Случай, когда загрузка завершена, но профиль все еще null (и нет ошибки?)
+                // Такое возможно если loadProfile вернул null без исключения.
+                Text(
+                    "Данные профиля отсутствуют",
+                    color = MaterialTheme.colorScheme.secondary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Spacer(Modifier.height(8.dp))
+            } else if (!currentProfile.isSubscribed) {
+                Text("Вложения доступны только по подписке", color = MaterialTheme.colorScheme.secondary)
                 Spacer(Modifier.height(8.dp))
             }
 
@@ -525,7 +553,6 @@ fun ProfileScreen(
     controller: AppController,
     showSnackbar: (String) -> Unit
 ) {
-    var profile by remember { mutableStateOf<ProfileDto?>(null) }
     var avatarUrl by remember { mutableStateOf("") }
     var deathTimeout by remember { mutableStateOf("") }
 
@@ -533,13 +560,72 @@ fun ProfileScreen(
     var newPass by remember { mutableStateOf("") }
 
     val scope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) }
+    var profileLoadError by remember { mutableStateOf(false) }
+
+    val currentProfile = controller.state.profile
 
     LaunchedEffect(Unit) {
-        profile = controller.loadProfile()
-        profile?.let {
+        if (currentProfile == null) {
+            isLoading = true
+            profileLoadError = false
+            try {
+                val res = controller.loadProfile()
+                if (res == null) {
+                    profileLoadError = true
+                }
+            } catch (e: Exception) {
+                profileLoadError = true
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    LaunchedEffect(currentProfile) {
+        currentProfile?.let {
             avatarUrl = it.avatarUrl ?: ""
             deathTimeout = it.deathTimeoutSeconds.toString()
         }
+    }
+
+    if (isLoading && currentProfile == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (currentProfile == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                if (profileLoadError) {
+                    Text("Не удалось загрузить данные профиля", color = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = {
+                        scope.launch {
+                            isLoading = true
+                            profileLoadError = false
+                            try {
+                                val res = controller.loadProfile()
+                                if (res == null) {
+                                    profileLoadError = true
+                                }
+                            } catch (e: Exception) {
+                                profileLoadError = true
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    }) {
+                        Text("Попробовать снова")
+                    }
+                } else {
+                    Text("Загрузка...", color = MaterialTheme.colorScheme.secondary)
+                }
+            }
+        }
+        return
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -568,7 +654,6 @@ fun ProfileScreen(
                     seconds
                 )
                 if (updated != null) {
-                    profile = updated
                     showSnackbar("Профиль обновлён")
                 } else showSnackbar("Ошибка обновления профиля")
             }

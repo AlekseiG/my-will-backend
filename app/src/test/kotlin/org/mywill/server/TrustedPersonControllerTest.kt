@@ -7,7 +7,6 @@ import org.mywill.server.controller.dto.AddTrustedPersonRequest
 import org.mywill.server.controller.dto.DeathConfirmationRequest
 import org.mywill.server.entity.User
 import org.mywill.server.repository.TrustedPersonRepository
-import org.mywill.server.repository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
@@ -31,8 +30,6 @@ class TrustedPersonControllerTest : BaseIntegrationTest() {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
-    private lateinit var userRepository: UserRepository
 
     @Autowired
     private lateinit var trustedPersonRepository: TrustedPersonRepository

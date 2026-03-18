@@ -2,12 +2,9 @@ package org.mywill.server
 
 import org.junit.jupiter.api.Test
 import org.mywill.server.entity.User
-import org.mywill.server.repository.UserRepository
 import org.mywill.server.service.DeathCheckService
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.transaction.annotation.Transactional
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Clock
@@ -19,8 +16,6 @@ class DeathCheckServiceTest : BaseIntegrationTest() {
     @Autowired
     private lateinit var deathCheckService: DeathCheckService
 
-    @Autowired
-    private lateinit var userRepository: UserRepository
 
     @Test
     fun testCheckDeaths() {

@@ -6,20 +6,13 @@ import org.junit.jupiter.api.Test
 import org.mywill.server.controller.dto.ChangePasswordRequest
 import org.mywill.server.controller.dto.UpdateProfileRequest
 import org.mywill.server.entity.User
-import org.mywill.server.repository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.get
-import org.springframework.test.web.servlet.patch
-import org.springframework.test.web.servlet.post
-import org.springframework.test.web.servlet.delete
+import org.springframework.test.web.servlet.*
 import org.springframework.transaction.annotation.Transactional
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -37,8 +30,6 @@ class ProfileControllerTest : BaseIntegrationTest() {
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @Autowired
-    private lateinit var userRepository: UserRepository
 
     @Autowired
     private lateinit var passwordEncoder: PasswordEncoder
