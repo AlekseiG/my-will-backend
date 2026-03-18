@@ -3,10 +3,17 @@ package org.mywill.client.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -165,6 +172,33 @@ fun AuthScreen(
     
     val scope = rememberCoroutineScope()
 
+    val onLoginClick = {
+        scope.launch {
+            isLoading = true
+            // Выбираем метод контроллера в зависимости от текущего режима (логин/регистрация)
+            val res = if (isRegistering) {
+                controller.register(email, password)
+            } else {
+                controller.login(email, password)
+            }
+            isLoading = false
+            showSnackbar(res.message)
+            if (res.success) {
+                if (isRegistering) {
+                    // Если регистрация прошла успешно, переходим к вводу кода верификации
+                    isVerifying = true
+                } else {
+                    // Если вход успешен, переходим на экран списка
+                    onLoginSuccess()
+                }
+            } else if (res.message.contains("verify")) {
+                // Если сервер сообщил, что нужна верификация (аккаунт еще не подтвержден)
+                isVerifying = true
+            }
+        }
+    }
+
+
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -178,44 +212,35 @@ fun AuthScreen(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth()
+                placeholder = { Text("example@gmail.com") },
+                modifier = Modifier.fillMaxWidth().semantics {
+                    contentType = ContentType.EmailAddress 
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                )
             )
             Spacer(Modifier.height(8.dp))
             TextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = PasswordVisualTransformation()
+                placeholder = { Text("Введите пароль") },
+                modifier = Modifier.fillMaxWidth().semantics {
+                    contentType = ContentType.Password
+                },
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(onDone = { onLoginClick() })
             )
             Spacer(Modifier.height(16.dp))
 
             Button(
-                onClick = {
-                    scope.launch {
-                        isLoading = true
-                        // Выбираем метод контроллера в зависимости от текущего режима (логин/регистрация)
-                        val res = if (isRegistering) {
-                            controller.register(email, password)
-                        } else {
-                            controller.login(email, password)
-                        }
-                        isLoading = false
-                        showSnackbar(res.message)
-                        if (res.success) {
-                            if (isRegistering) {
-                                // Если регистрация прошла успешно, переходим к вводу кода верификации
-                                isVerifying = true
-                            } else {
-                                // Если вход успешен, переходим на экран списка
-                                onLoginSuccess()
-                            }
-                        } else if (res.message.contains("verify")) {
-                            // Если сервер сообщил, что нужна верификация (аккаунт еще не подтвержден)
-                            isVerifying = true
-                        }
-                    }
-                },
+                onClick = { onLoginClick() },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             ) {
@@ -667,16 +692,22 @@ fun ProfileScreen(
             value = oldPass,
             onValueChange = { oldPass = it },
             label = { Text("Старый пароль") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation()
+            modifier = Modifier.fillMaxWidth().semantics {
+                contentType = ContentType.Password
+            },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
         Spacer(Modifier.height(8.dp))
         TextField(
             value = newPass,
             onValueChange = { newPass = it },
             label = { Text("Новый пароль") },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation()
+            modifier = Modifier.fillMaxWidth().semantics {
+                contentType = ContentType.Password
+            },
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
         )
         Spacer(Modifier.height(8.dp))
         Button(onClick = {
@@ -732,7 +763,8 @@ fun TrustedPeopleScreen(
                 value = newEmail,
                 onValueChange = { newEmail = it },
                 label = { Text("Email доверенного") },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f).semantics { contentType = ContentType.EmailAddress },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
             Spacer(Modifier.width(8.dp))
             Button(onClick = {
