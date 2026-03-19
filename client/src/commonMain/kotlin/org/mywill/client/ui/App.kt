@@ -399,6 +399,7 @@ fun EditorScreen(
     var allowedEmails by remember(will) { mutableStateOf(will?.allowedEmails ?: emptyList()) }
     var attachments by remember(will) { mutableStateOf(will?.attachments ?: emptyList()) }
     var selectedFiles by remember(will) { mutableStateOf(emptyList<SelectedFile>()) }
+    var isRecording by remember { mutableStateOf(false) }
     var accessEmail by remember(will) { mutableStateOf("") }
     var isLoadingProfile by remember { mutableStateOf(false) }
     var profileLoadError by remember { mutableStateOf(false) }
@@ -468,6 +469,12 @@ fun EditorScreen(
                         }
                     }
                 }
+                if (attachment.name.endsWith(".webm", ignoreCase = true)) {
+                    AudioPlayer(
+                        url = controller.getDownloadUrl(currentWillId ?: 0, attachment.key),
+                        authToken = controller.state.token
+                    )
+                }
             }
         }
         
@@ -496,7 +503,7 @@ fun EditorScreen(
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
                         onClick = {
@@ -504,12 +511,58 @@ fun EditorScreen(
                                 selectedFiles = (selectedFiles + newFiles).distinctBy { it.name }
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.weight(1f)
                     ) {
                         Icon(painterResource(Res.drawable.attach_file), contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Выбрать файлы для вложения")
+                        Text("Файлы")
                     }
+
+                    if (isAudioRecordingSupported) {
+                        if (!isRecording) {
+                            Button(
+                                onClick = {
+                                    startAudioRecording()
+                                    isRecording = true
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondary
+                                )
+                            ) {
+                                Icon(painterResource(Res.drawable.mic), contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Голос")
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    stopAudioRecording { voiceFile ->
+                                        if (voiceFile != null) {
+                                            selectedFiles = (selectedFiles + voiceFile).distinctBy { it.name }
+                                        }
+                                        isRecording = false
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Icon(painterResource(Res.drawable.stop), contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Стоп")
+                            }
+                        }
+                    }
+                }
+                if (isRecording) {
+                    Text(
+                        "Идёт запись голосового сообщения...",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                 }
                 Spacer(Modifier.height(8.dp))
             } else if (isLoadingProfile) {

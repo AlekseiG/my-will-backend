@@ -42,3 +42,19 @@ actual fun downloadFile(url: String, fileName: String, bytes: ByteArray?) {
         }
     }
 }
+
+actual fun startAudioRecording() {
+    println("[DEBUG_LOG] Audio recording started (mock for JVM)")
+}
+
+actual fun stopAudioRecording(onResult: (SelectedFile?) -> Unit) {
+    println("[DEBUG_LOG] Audio recording stopped (mock for JVM)")
+    onResult(null)
+}
+
+@androidx.compose.runtime.Composable
+actual fun AudioPlayer(url: String, authToken: String?) {
+    androidx.compose.material3.Text("Воспроизведение аудио не поддерживается на Desktop")
+}
+
+actual val isAudioRecordingSupported: Boolean = false

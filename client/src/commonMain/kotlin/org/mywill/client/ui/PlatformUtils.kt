@@ -20,3 +20,24 @@ expect fun openFilePicker(onFilesSelected: (List<SelectedFile>) -> Unit)
  * @param bytes Если предоставлены, использовать эти байты вместо скачивания по URL (для обхода авторизации).
  */
 expect fun downloadFile(url: String, fileName: String, bytes: ByteArray? = null)
+
+/**
+ * Проигрывает аудио по URL с заголовком авторизации.
+ */
+@androidx.compose.runtime.Composable
+expect fun AudioPlayer(url: String, authToken: String?)
+
+/**
+ * Запускает запись аудио.
+ */
+expect fun startAudioRecording()
+
+/**
+ * Останавливает запись аудио и возвращает результат в колбэк.
+ */
+expect fun stopAudioRecording(onResult: (SelectedFile?) -> Unit)
+
+/**
+ * Поддерживается ли запись аудио на данной платформе.
+ */
+expect val isAudioRecordingSupported: Boolean

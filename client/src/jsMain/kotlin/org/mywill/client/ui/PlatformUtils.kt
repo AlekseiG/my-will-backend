@@ -1,8 +1,38 @@
 package org.mywill.client.ui
 
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.dp
 import kotlinx.browser.document
+import kotlinx.browser.window
+import mywill.client.generated.resources.Res
+import mywill.client.generated.resources.mic
+import mywill.client.generated.resources.stop
+import org.jetbrains.compose.resources.painterResource
+import org.khronos.webgl.Int8Array
 import org.w3c.dom.HTMLAnchorElement
+import org.w3c.dom.HTMLAudioElement
+import org.w3c.dom.url.URL
+import org.w3c.files.Blob
+import org.w3c.files.BlobPropertyBag
 import org.w3c.files.FileReader
+
+internal external interface MediaStream {
+    fun getTracks(): Array<dynamic>
+}
+
+internal external interface MediaDevices {
+    fun getUserMedia(constraints: dynamic): kotlin.js.Promise<dynamic>
+}
+
+internal external interface Navigator {
+    val mediaDevices: MediaDevices
+}
+
+private val Navigator.mediaDevices: MediaDevices
+    get() = asDynamic().mediaDevices as MediaDevices
 
 /**
  * Реализация выбора файлов для браузера (JS).
@@ -76,4 +106,119 @@ private fun Int8Array(buffer: org.khronos.webgl.ArrayBuffer): ByteArray {
         bytes[i] = view.asDynamic()[i] as Byte
     }
     return bytes
+}
+
+private var mediaRecorder: dynamic = null
+private var audioChunks = mutableListOf<Blob>()
+
+actual val isAudioRecordingSupported: Boolean = true
+
+actual fun startAudioRecording() {
+    audioChunks.clear()
+    val navigator = window.navigator as Navigator
+    navigator.mediaDevices.getUserMedia(js("{audio: true}")).then { stream: dynamic ->
+        mediaRecorder = js("new MediaRecorder(stream)")
+        mediaRecorder.ondataavailable = { event: dynamic ->
+            audioChunks.add(event.data as Blob)
+        }
+        mediaRecorder.start()
+    }.catch { err: dynamic ->
+        println("[ERROR_LOG] Failed to start recording: $err")
+    }
+}
+
+actual fun stopAudioRecording(onResult: (SelectedFile?) -> Unit) {
+    if (mediaRecorder == null) {
+        onResult(null)
+        return
+    }
+
+    mediaRecorder.onstop = {
+        val blob = Blob(audioChunks.toTypedArray(), BlobPropertyBag(type = "audio/webm"))
+        val reader = FileReader()
+        reader.onload = { loadEvent ->
+            val arrayBuffer = loadEvent.target.asDynamic().result as? org.khronos.webgl.ArrayBuffer
+            if (arrayBuffer != null) {
+                val bytes = Int8Array(arrayBuffer).unsafeCast<ByteArray>()
+                val timestamp = js("new Date().getTime()").toString()
+                onResult(SelectedFile("voice_message_$timestamp.webm", bytes))
+            } else {
+                onResult(null)
+            }
+        }
+        reader.readAsArrayBuffer(blob)
+
+        // Остановка треков стрима
+        val stream = mediaRecorder.stream
+        if (stream != null) {
+            val tracks = stream.getTracks().unsafeCast<Array<dynamic>>()
+            tracks.forEach { track -> track.stop() }
+        }
+        mediaRecorder = null
+    }
+    mediaRecorder.stop()
+}
+
+@androidx.compose.runtime.Composable
+actual fun AudioPlayer(url: String, authToken: String?) {
+    var isPlaying by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    var audio: HTMLAudioElement? by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(null) }
+
+    androidx.compose.runtime.DisposableEffect(url, authToken) {
+        val element = document.createElement("audio") as HTMLAudioElement
+        audio = element
+
+        val xhr = org.w3c.xhr.XMLHttpRequest()
+        xhr.open("GET", url)
+        if (authToken != null) {
+            xhr.setRequestHeader("Authorization", "Bearer $authToken")
+        }
+        xhr.responseType = "blob".asDynamic()
+        xhr.onload = {
+            if (xhr.status == 200.toShort()) {
+                val blob = xhr.response as? Blob
+                if (blob != null) {
+                    val blobUrl = URL.createObjectURL(blob)
+                    element.src = blobUrl
+                }
+            }
+        }
+        xhr.onerror = {
+            println("[ERROR_LOG] XHR request failed for $url")
+        }
+        xhr.send()
+
+        element.onplay = { isPlaying = true }
+        element.onpause = { isPlaying = false }
+        element.onended = { isPlaying = false }
+
+        onDispose {
+            xhr.abort()
+            if (element.src.startsWith("blob:")) {
+                URL.revokeObjectURL(element.src)
+            }
+            element.pause()
+            audio = null
+        }
+    }
+
+    androidx.compose.foundation.layout.Row(
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        modifier = androidx.compose.ui.Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+    ) {
+        androidx.compose.material3.IconButton(onClick = {
+            val a = audio ?: return@IconButton
+            if (isPlaying) a.pause() else a.play()
+        }) {
+            androidx.compose.material3.Icon(
+                painter = painterResource(if (isPlaying) Res.drawable.stop else Res.drawable.mic),
+                contentDescription = if (isPlaying) "Pause" else "Play"
+            )
+        }
+        androidx.compose.material3.Text(
+            text = if (isPlaying) "Прослушивание..." else "Голосовое сообщение",
+            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+            modifier = androidx.compose.ui.Modifier.padding(start = 8.dp)
+        )
+    }
 }

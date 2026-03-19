@@ -33,3 +33,4 @@ replay_pid*
 /.kotlin/
 /app/src/main/resources/application-secret.yml
 /local.properties123
+/app/src/main/resources/application-secret
