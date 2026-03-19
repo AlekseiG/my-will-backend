@@ -1,5 +1,10 @@
 package org.mywill.client.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -118,36 +123,47 @@ fun App(controller: AppController, onGoogleLogin: (() -> Unit)? = null) {
             contentAlignment = Alignment.TopCenter
         ) {
             Box(modifier = Modifier.widthIn(max = 600.dp).fillMaxWidth()) {
-                when (currentScreen) {
-                    Screen.Auth -> AuthScreen(
-                        controller = controller,
-                        onLoginSuccess = { currentScreen = Screen.List },
-                        onGoogleLogin = onGoogleLogin,
-                        showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
-                    )
-                    Screen.List -> ListScreen(
-                        controller = controller,
-                        isSharedMode = isSharedMode,
-                        onWillClick = { will ->
-                            currentWill = will
-                            currentScreen = Screen.Editor
-                        }
-                    )
-                    Screen.Editor -> EditorScreen(
-                        controller = controller,
-                        will = currentWill,
-                        isReadOnly = isSharedMode && currentWill != null,
-                        onBack = { currentScreen = Screen.List },
-                        showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
-                    )
-                    Screen.Profile -> ProfileScreen(
-                        controller = controller,
-                        showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
-                    )
-                    Screen.Trusted -> TrustedPeopleScreen(
-                        controller = controller,
-                        showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
-                    )
+                AnimatedContent(
+                    targetState = currentScreen,
+                    transitionSpec = {
+                        fadeIn() togetherWith fadeOut()
+                    }
+                ) { targetScreen ->
+                    when (targetScreen) {
+                        Screen.Auth -> AuthScreen(
+                            controller = controller,
+                            onLoginSuccess = { currentScreen = Screen.List },
+                            onGoogleLogin = onGoogleLogin,
+                            showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
+                        )
+
+                        Screen.List -> ListScreen(
+                            controller = controller,
+                            isSharedMode = isSharedMode,
+                            onWillClick = { will ->
+                                currentWill = will
+                                currentScreen = Screen.Editor
+                            }
+                        )
+
+                        Screen.Editor -> EditorScreen(
+                            controller = controller,
+                            will = currentWill,
+                            isReadOnly = isSharedMode && currentWill != null,
+                            onBack = { currentScreen = Screen.List },
+                            showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
+                        )
+
+                        Screen.Profile -> ProfileScreen(
+                            controller = controller,
+                            showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
+                        )
+
+                        Screen.Trusted -> TrustedPeopleScreen(
+                            controller = controller,
+                            showSnackbar = { scope.launch { snackbarHostState.showSnackbar(it) } }
+                        )
+                    }
                 }
             }
         }
@@ -307,28 +323,56 @@ fun ListScreen(
     onWillClick: (WillDto) -> Unit
 ) {
     var wills by remember { mutableStateOf(emptyList<WillDto>()) }
-    val scope = rememberCoroutineScope()
+    var isLoading by remember { mutableStateOf(false) }
 
     LaunchedEffect(isSharedMode) {
-        wills = if (isSharedMode) controller.loadSharedWills() else controller.loadMyWills()
+        isLoading = true
+        try {
+            wills = if (isSharedMode) controller.loadSharedWills() else controller.loadMyWills()
+        } finally {
+            isLoading = false
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Text(if (isSharedMode) "Доступные мне" else "Мои завещания", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(16.dp))
-        
-        LazyColumn {
-            items(wills) { will ->
+
+        if (isLoading) {
+            repeat(5) {
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    onClick = { onWillClick(will) }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(will.title, style = MaterialTheme.typography.titleMedium)
-                        if (isSharedMode) {
-                            Text("От: ${will.ownerEmail}", style = MaterialTheme.typography.bodySmall)
-                        } else {
-                            Text(will.content.take(50) + if (will.content.length > 50) "..." else "", style = MaterialTheme.typography.bodyMedium)
+                        Box(
+                            Modifier.fillMaxWidth(0.6f).height(20.dp)
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Box(
+                            Modifier.fillMaxWidth(0.9f).height(16.dp)
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
+                        )
+                    }
+                }
+            }
+        } else {
+            LazyColumn {
+                items(wills) { will ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        onClick = { onWillClick(will) }
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(will.title, style = MaterialTheme.typography.titleMedium)
+                            if (isSharedMode) {
+                                Text("От: ${will.ownerEmail}", style = MaterialTheme.typography.bodySmall)
+                            } else {
+                                Text(
+                                    will.content.take(50) + if (will.content.length > 50) "..." else "",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     }
                 }
@@ -349,13 +393,13 @@ fun EditorScreen(
     onBack: () -> Unit,
     showSnackbar: (String) -> Unit
 ) {
-    var title by remember { mutableStateOf(will?.title ?: "") }
-    var content by remember { mutableStateOf(will?.content ?: "") }
-    var currentWillId by remember { mutableStateOf(will?.id) }
-    var allowedEmails by remember { mutableStateOf(will?.allowedEmails ?: emptyList()) }
-    var attachments by remember { mutableStateOf(will?.attachments ?: emptyList()) }
-    var selectedFiles by remember { mutableStateOf(emptyList<SelectedFile>()) }
-    var accessEmail by remember { mutableStateOf("") }
+    var title by remember(will) { mutableStateOf(will?.title ?: "") }
+    var content by remember(will) { mutableStateOf(will?.content ?: "") }
+    var currentWillId by remember(will) { mutableStateOf(will?.id) }
+    var allowedEmails by remember(will) { mutableStateOf(will?.allowedEmails ?: emptyList()) }
+    var attachments by remember(will) { mutableStateOf(will?.attachments ?: emptyList()) }
+    var selectedFiles by remember(will) { mutableStateOf(emptyList<SelectedFile>()) }
+    var accessEmail by remember(will) { mutableStateOf("") }
     var isLoadingProfile by remember { mutableStateOf(false) }
     var profileLoadError by remember { mutableStateOf(false) }
     var initialLoadDone by remember { mutableStateOf(false) }
@@ -617,8 +661,19 @@ fun ProfileScreen(
     }
 
     if (isLoading && currentProfile == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Box(
+                Modifier.fillMaxWidth(0.4f).height(32.dp)
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f))
+            )
+            Spacer(Modifier.height(24.dp))
+            repeat(4) {
+                Box(
+                    Modifier.fillMaxWidth().height(56.dp)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f))
+                )
+                Spacer(Modifier.height(12.dp))
+            }
         }
         return
     }
@@ -749,12 +804,18 @@ fun TrustedPeopleScreen(
     var trusted by remember { mutableStateOf(listOf<TrustedPersonDto>()) }
     var newEmail by remember { mutableStateOf("") }
     var owners by remember { mutableStateOf(listOf<String>()) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        trusted = controller.loadMyTrustedPeople()
-        owners = controller.loadWhoseTrustedIAm()
+        isLoading = true
+        try {
+            trusted = controller.loadMyTrustedPeople()
+            owners = controller.loadWhoseTrustedIAm()
+        } finally {
+            isLoading = false
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -781,26 +842,36 @@ fun TrustedPeopleScreen(
             }) { Text("Добавить") }
         }
         Spacer(Modifier.height(8.dp))
-        LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
-            items(trusted) { tp ->
-                Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                    Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(tp.email, style = MaterialTheme.typography.titleSmall)
-                            Text(
-                                if (tp.confirmedDeath) "Статус: подтвердил смерть" else "Статус: ожидается",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-                        OutlinedButton(onClick = {
-                            scope.launch {
-                                val ok = controller.removeTrustedPerson(tp.id!!)
-                                if (ok) {
-                                    trusted = controller.loadMyTrustedPeople()
-                                    showSnackbar("Удалено")
-                                } else showSnackbar("Ошибка")
+
+        if (isLoading) {
+            repeat(3) {
+                Box(
+                    Modifier.fillMaxWidth().height(72.dp).padding(vertical = 4.dp)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f))
+                )
+            }
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxWidth().weight(1f, fill = false)) {
+                items(trusted) { tp ->
+                    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(tp.email, style = MaterialTheme.typography.titleSmall)
+                                Text(
+                                    if (tp.confirmedDeath) "Статус: подтвердил смерть" else "Статус: ожидается",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
-                        }) { Text("Удалить") }
+                            OutlinedButton(onClick = {
+                                scope.launch {
+                                    val ok = controller.removeTrustedPerson(tp.id!!)
+                                    if (ok) {
+                                        trusted = controller.loadMyTrustedPeople()
+                                        showSnackbar("Удалено")
+                                    } else showSnackbar("Ошибка")
+                                }
+                            }) { Text("Удалить") }
+                        }
                     }
                 }
             }
@@ -809,7 +880,15 @@ fun TrustedPeopleScreen(
         Spacer(Modifier.height(16.dp))
         Text("Я доверенное лицо для:", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
-        if (owners.isEmpty()) {
+
+        if (isLoading) {
+            repeat(2) {
+                Box(
+                    Modifier.fillMaxWidth().height(64.dp).padding(vertical = 4.dp)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.05f))
+                )
+            }
+        } else if (owners.isEmpty()) {
             Text("Вы не являетесь доверенным ни для кого")
         } else {
             LazyColumn {
