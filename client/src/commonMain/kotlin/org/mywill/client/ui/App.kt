@@ -434,7 +434,8 @@ fun EditorScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    val scrollState = rememberScrollState()
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(scrollState)) {
         TextField(
             value = title,
             onValueChange = { title = it },
@@ -447,7 +448,7 @@ fun EditorScreen(
             value = content,
             onValueChange = { content = it },
             label = { Text("Содержание") },
-            modifier = Modifier.fillMaxWidth().weight(1f),
+            modifier = Modifier.fillMaxWidth().heightIn(min = 150.dp),
             readOnly = isReadOnly
         )
 
