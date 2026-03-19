@@ -19,20 +19,20 @@ import org.w3c.files.Blob
 import org.w3c.files.BlobPropertyBag
 import org.w3c.files.FileReader
 
-internal external interface MediaStream {
+internal external interface JsMediaStream {
     fun getTracks(): Array<dynamic>
 }
 
-internal external interface MediaDevices {
+internal external interface JsMediaDevices {
     fun getUserMedia(constraints: dynamic): kotlin.js.Promise<dynamic>
 }
 
-internal external interface Navigator {
-    val mediaDevices: MediaDevices
+internal external interface JsNavigator {
+    // Включаем свойство прямо в интерфейс, чтобы избежать конфликтов с расширениями
+    val mediaDevices: JsMediaDevices
 }
 
-private val Navigator.mediaDevices: MediaDevices
-    get() = asDynamic().mediaDevices as MediaDevices
+// Убираем расширение, так как оно больше не нужно (свойство есть в интерфейсе)
 
 /**
  * Реализация выбора файлов для браузера (JS).
@@ -115,7 +115,7 @@ actual val isAudioRecordingSupported: Boolean = true
 
 actual fun startAudioRecording() {
     audioChunks.clear()
-    val navigator = window.navigator as Navigator
+    val navigator = window.navigator.unsafeCast<JsNavigator>()
     navigator.mediaDevices.getUserMedia(js("{audio: true}")).then { stream: dynamic ->
         mediaRecorder = js("new MediaRecorder(stream)")
         mediaRecorder.ondataavailable = { event: dynamic ->
@@ -152,7 +152,7 @@ actual fun stopAudioRecording(onResult: (SelectedFile?) -> Unit) {
         val stream = mediaRecorder.stream
         if (stream != null) {
             val tracks = stream.getTracks().unsafeCast<Array<dynamic>>()
-            tracks.forEach { track -> track.stop() }
+            tracks.forEach { track -> track.asDynamic().stop() }
         }
         mediaRecorder = null
     }

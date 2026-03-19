@@ -259,7 +259,7 @@ class ApiClient(private val baseUrl: String = "http://localhost:8080") {
                 withCredentials()
             }
             if (response.status == HttpStatusCode.OK) {
-                response.readBytes()
+                response.readRawBytes()
             } else null
         } catch (e: Exception) {
             println("[ERROR_LOG] Download failed: ${e.message}")
