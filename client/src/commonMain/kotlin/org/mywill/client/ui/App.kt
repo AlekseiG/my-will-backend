@@ -400,10 +400,13 @@ fun EditorScreen(
     var attachments by remember(will) { mutableStateOf(will?.attachments ?: emptyList()) }
     var selectedFiles by remember(will) { mutableStateOf(emptyList<SelectedFile>()) }
     var isRecording by remember { mutableStateOf(false) }
+    var isVideoRecording by remember { mutableStateOf(false) }
     var accessEmail by remember(will) { mutableStateOf("") }
     var isLoadingProfile by remember { mutableStateOf(false) }
     var profileLoadError by remember { mutableStateOf(false) }
     var initialLoadDone by remember { mutableStateOf(false) }
+    var activeVideoUrl by remember { mutableStateOf<String?>(null) }
+    var activeImageUrl by remember { mutableStateOf<String?>(null) }
 
     val currentProfile = controller.state.profile
     val scope = rememberCoroutineScope()
@@ -454,26 +457,48 @@ fun EditorScreen(
             attachments.forEach { attachment ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(attachment.name, modifier = Modifier.weight(1f), maxLines = 1)
-                    Button(onClick = {
+
+                    if (attachment.name.endsWith(".webm", ignoreCase = true)) {
+                        if (attachment.name.contains("video", ignoreCase = true)) {
+                            val videoUrl = controller.getDownloadUrl(currentWillId ?: 0, attachment.key)
+                            IconButton(onClick = { activeVideoUrl = videoUrl }) {
+                                Icon(painterResource(Res.drawable.play_arrow), contentDescription = "Смотреть")
+                            }
+                        } else {
+                            AudioPlayer(
+                                url = controller.getDownloadUrl(currentWillId ?: 0, attachment.key),
+                                authToken = controller.state.token
+                            )
+                        }
+                    }
+
+                    if (attachment.name.let {
+                            it.endsWith(".jpg", true) || it.endsWith(
+                                ".jpeg",
+                                true
+                            ) || it.endsWith(".png", true) || it.endsWith(".gif", true)
+                        }) {
+                        val imageUrl = controller.getDownloadUrl(currentWillId ?: 0, attachment.key)
+                        IconButton(onClick = { activeImageUrl = imageUrl }) {
+                            Icon(painterResource(Res.drawable.image), contentDescription = "Посмотреть")
+                        }
+                    }
+
+                    IconButton(onClick = {
                         scope.launch {
                             val url = controller.getDownloadUrl(currentWillId!!, attachment.key)
                             val bytes = if (currentWillId != null) controller.downloadFile(url) else null
                             downloadFile(url, attachment.name, bytes)
                         }
                     }) {
-                        Text("Скачать")
+                        Icon(painterResource(Res.drawable.download), contentDescription = "Скачать")
                     }
+
                     if (!isReadOnly) {
                         IconButton(onClick = { attachments = attachments - attachment }) {
                             Icon(painterResource(Res.drawable.delete), contentDescription = "Удалить")
                         }
                     }
-                }
-                if (attachment.name.endsWith(".webm", ignoreCase = true)) {
-                    AudioPlayer(
-                        url = controller.getDownloadUrl(currentWillId ?: 0, attachment.key),
-                        authToken = controller.state.token
-                    )
                 }
             }
         }
@@ -555,10 +580,56 @@ fun EditorScreen(
                             }
                         }
                     }
+
+                    if (isVideoRecordingSupported) {
+                        if (!isVideoRecording) {
+                            Button(
+                                onClick = {
+                                    startVideoRecording()
+                                    isVideoRecording = true
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.tertiary
+                                )
+                            ) {
+                                Icon(painterResource(Res.drawable.play_arrow), contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Видео")
+                            }
+                        } else {
+                            Button(
+                                onClick = {
+                                    stopVideoRecording { videoFile ->
+                                        if (videoFile != null) {
+                                            selectedFiles = (selectedFiles + videoFile).distinctBy { it.name }
+                                        }
+                                        isVideoRecording = false
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Icon(painterResource(Res.drawable.stop), contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text("Стоп")
+                            }
+                        }
+                    }
                 }
                 if (isRecording) {
                     Text(
                         "Идёт запись голосового сообщения...",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+                if (isVideoRecording) {
+                    Text(
+                        "Идёт запись видео сообщения...",
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -668,6 +739,22 @@ fun EditorScreen(
                 }
                 Text("Разрешено: ${allowedEmails.joinToString()}")
             }
+        }
+
+        activeVideoUrl?.let { url ->
+            VideoPlayer(
+                url = url,
+                authToken = controller.state.token,
+                onClose = { activeVideoUrl = null }
+            )
+        }
+
+        activeImageUrl?.let { url ->
+            ImageViewer(
+                url = url,
+                authToken = controller.state.token,
+                onClose = { activeImageUrl = null }
+            )
         }
     }
 }

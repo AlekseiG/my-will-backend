@@ -52,9 +52,29 @@ actual fun stopAudioRecording(onResult: (SelectedFile?) -> Unit) {
     onResult(null)
 }
 
+actual fun startVideoRecording() {
+    println("[DEBUG_LOG] Video recording started (mock for JVM)")
+}
+
+actual fun stopVideoRecording(onResult: (SelectedFile?) -> Unit) {
+    println("[DEBUG_LOG] Video recording stopped (mock for JVM)")
+    onResult(null)
+}
+
 @androidx.compose.runtime.Composable
 actual fun AudioPlayer(url: String, authToken: String?) {
     androidx.compose.material3.Text("Воспроизведение аудио не поддерживается на Desktop")
 }
 
+@androidx.compose.runtime.Composable
+actual fun VideoPlayer(url: String, authToken: String?, onClose: () -> Unit) {
+    androidx.compose.material3.Text("Воспроизведение видео не поддерживается на Desktop")
+}
+
+@androidx.compose.runtime.Composable
+actual fun ImageViewer(url: String, authToken: String?, onClose: () -> Unit) {
+    androidx.compose.material3.Text("Просмотр фото не поддерживается на Desktop")
+}
+
 actual val isAudioRecordingSupported: Boolean = false
+actual val isVideoRecordingSupported: Boolean = false

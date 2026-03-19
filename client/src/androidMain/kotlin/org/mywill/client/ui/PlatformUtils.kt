@@ -20,6 +20,16 @@ actual fun AudioPlayer(url: String, authToken: String?) {
     Text("Прослушивание аудио на Android пока не реализовано")
 }
 
+@Composable
+actual fun VideoPlayer(url: String, authToken: String?, onClose: () -> Unit) {
+    Text("Просмотр видео на Android пока не реализовано")
+}
+
+@Composable
+actual fun ImageViewer(url: String, authToken: String?, onClose: () -> Unit) {
+    Text("Просмотр фото на Android пока не реализовано")
+}
+
 actual fun startAudioRecording() {
     println("[DEBUG_LOG] startAudioRecording (mock for Android)")
 }
@@ -29,4 +39,14 @@ actual fun stopAudioRecording(onResult: (SelectedFile?) -> Unit) {
     onResult(null)
 }
 
+actual fun startVideoRecording() {
+    println("[DEBUG_LOG] startVideoRecording (mock for Android)")
+}
+
+actual fun stopVideoRecording(onResult: (SelectedFile?) -> Unit) {
+    println("[DEBUG_LOG] stopVideoRecording (mock for Android)")
+    onResult(null)
+}
+
 actual val isAudioRecordingSupported: Boolean = false
+actual val isVideoRecordingSupported: Boolean = false

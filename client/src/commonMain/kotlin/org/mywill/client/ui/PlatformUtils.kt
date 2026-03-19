@@ -28,6 +28,18 @@ expect fun downloadFile(url: String, fileName: String, bytes: ByteArray? = null)
 expect fun AudioPlayer(url: String, authToken: String?)
 
 /**
+ * Проигрывает видео по URL с заголовком авторизации.
+ */
+@androidx.compose.runtime.Composable
+expect fun VideoPlayer(url: String, authToken: String?, onClose: () -> Unit)
+
+/**
+ * Показывает изображение по URL с заголовком авторизации.
+ */
+@androidx.compose.runtime.Composable
+expect fun ImageViewer(url: String, authToken: String?, onClose: () -> Unit)
+
+/**
  * Запускает запись аудио.
  */
 expect fun startAudioRecording()
@@ -38,6 +50,21 @@ expect fun startAudioRecording()
 expect fun stopAudioRecording(onResult: (SelectedFile?) -> Unit)
 
 /**
+ * Запускает запись видео.
+ */
+expect fun startVideoRecording()
+
+/**
+ * Останавливает запись видео и возвращает результат в колбэк.
+ */
+expect fun stopVideoRecording(onResult: (SelectedFile?) -> Unit)
+
+/**
  * Поддерживается ли запись аудио на данной платформе.
  */
 expect val isAudioRecordingSupported: Boolean
+
+/**
+ * Поддерживается ли запись видео на данной платформе.
+ */
+expect val isVideoRecordingSupported: Boolean
