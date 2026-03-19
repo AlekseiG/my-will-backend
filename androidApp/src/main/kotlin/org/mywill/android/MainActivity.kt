@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             App(controller, onGoogleLogin = {
                 val baseUrl = getString(R.string.backend_base_url)
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("$baseUrl/oauth2/authorization/google"))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("$baseUrl/oauth2/authorization/google?app=true"))
                 startActivity(intent)
             })
         }

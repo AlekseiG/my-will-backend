@@ -1,27 +1,27 @@
 package org.mywill.server.config
 
+import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpStatus
+import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.core.Authentication
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.config.Customizer
-import org.springframework.security.config.http.SessionCreationPolicy
-import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
-import org.springframework.security.web.authentication.HttpStatusEntryPoint
-import org.springframework.http.HttpStatus
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestCustomizers
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
-import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
-import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.core.user.OAuth2User
+import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.HttpStatusEntryPoint
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher
 
 @Configuration
 @EnableWebSecurity
@@ -64,6 +64,12 @@ class SecurityConfig(
                     resolver.setAuthorizationRequestCustomizer { builder ->
                         val requestAttributes = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes() as? org.springframework.web.context.request.ServletRequestAttributes
                         val request = requestAttributes?.request
+
+                        // Если в запросе есть параметр app=true, сохраняем его в сессии
+                        if (request?.getParameter("app") == "true") {
+                            request.session.setAttribute("is_native_app", true)
+                        }
+
                         val host = request?.serverName ?: ""
                         
                         // Добавляем параметры только если заходим по прямому IP (не localhost и не домен)
@@ -92,9 +98,9 @@ class SecurityConfig(
                         )
 
                         val token = jwtUtils.generateToken(user.email)
-                        
-                        val isMobile = request.getHeader("User-Agent")?.contains("Android", ignoreCase = true) == true
-                        val targetUrl = if (isMobile) {
+
+                        val isNativeApp = request.session.getAttribute("is_native_app") == true
+                        val targetUrl = if (isNativeApp) {
                             "mywill://auth?token=$token"
                         } else {
                             "$frontendBaseUrl/#token=$token"
